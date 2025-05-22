@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import createDB from '../db';
 import { RowDataPacket, OkPacket, FieldPacket, OkPacketParams } from 'mysql2';
 
@@ -62,6 +63,43 @@ export const isUserVerfied = (email: string): Promise<boolean> => {
     const sql = 'SELECT * FROM users WHERE email = ?';
     const [rows] = await db.query<RowDataPacket[]>(sql, [email]);
     const user = rows[0] as User || null
+    if (!user) return resolve(false);
     resolve(user.is_verified);
+  });
+}
+
+// set reset password token and expires date
+export const setResetToken = (userId: number, token: string, expires: Date): Promise<void> => {
+  return new Promise(async (resolve, reject) => {
+    const db = await createDB();
+    await db.query(
+      'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
+      [token, expires, userId]
+    );
+    resolve();
+  });
+}
+
+// get user by reset token
+export const getUserByResetToken = (token: string): Promise<User | null> => {
+  return new Promise(async (resolve, reject) => {
+    const db = await createDB();
+    const [rows]: any = await db.query(
+      'SELECT * FROM users WHERE reset_token = ? AND reset_token_expires > NOW()',
+      [token]
+    );
+    resolve(rows[0] as User || null);
+  });
+}
+
+export const resetPassword = (userId: number, newPassword: string): Promise<void> => {
+  return new Promise(async (resolve, reject) => {
+    const db = await createDB();
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await db.query(
+      'UPDATE users SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+      [hashed, userId]
+    );
+    resolve();
   });
 }

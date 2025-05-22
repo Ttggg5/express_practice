@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { getUserByEmail, getUserById, createUser, verifyUser, isUserVerfied } from '../models/userModel';
+import * as userModel from '../models/userModel';
 import { randomBytes } from 'crypto';
-import { sendVerificationEmail } from '../utils/mail';
+import { sendVerificationEmail, sendResetEmail } from '../utils/mail';
 
 
 const router = Router();
@@ -12,13 +12,13 @@ router.post('/register', async (req: Request, res: Response) => {
   const { username, email, password } = req.body;
 
   try {
-    const existingUser = await getUserByEmail(email);
+    const existingUser = await userModel.getUserByEmail(email);
     if (existingUser) return res.status(400).json({ message: 'Email already in use' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const token = randomBytes(32).toString('hex') + await bcrypt.hash(email, 5);
 
-    const userId = await createUser(username, email, hashedPassword, token);
+    const userId = await userModel.createUser(username, email, hashedPassword, token);
 
     await sendVerificationEmail(email, token); // send email
 
@@ -33,7 +33,7 @@ router.post('/register', async (req: Request, res: Response) => {
 router.get('/verify', async (req: Request, res: Response) => {
   const { token } = req.query;
 
-  if (typeof token !== 'string' || !await verifyUser(token)) {
+  if (typeof token !== 'string' || !await userModel.verifyUser(token)) {
     return res.status(400).json({ message: 'Invalid token' });
   }
 
@@ -46,13 +46,13 @@ router.post('/login', async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
-    const user = await getUserByEmail(email);
+    const user = await userModel.getUserByEmail(email);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ message: 'Invalid password' });
 
-    const isVerified = await isUserVerfied(email);
+    const isVerified = await userModel.isUserVerfied(email);
     if (!isVerified) return res.status(401).json({ message: 'Email not verified yet' });
 
     req.session.userId = user.id;
@@ -75,12 +75,41 @@ router.post('/logout', (req: Request, res: Response) => {
 // check current login user
 router.get('/me', async (req: Request, res: Response) => {
   if (req.session.userId) {
-    const user = await getUserById(req.session.userId);
+    const user = await userModel.getUserById(req.session.userId);
     res.json({ message: 'User found', user});
   }
   else {
     res.json({ message: 'No user logged in' });
   }
+});
+
+// forgot password
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  const user = await userModel.getUserByEmail(email);
+  if (!user) return res.status(200).json({ message: 'Email not regist' });
+
+  const token = randomBytes(32).toString('hex') + await bcrypt.hash(email, 5);
+  const expires = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes
+
+  await userModel.setResetToken(user.id, token, expires);
+
+  await sendResetEmail(email, token);
+
+  res.json({ message: 'Reset link sent' });
+});
+
+// reset password
+router.post('/reset-password', async (req: Request, res: Response) => {
+  const { token, password } = req.body;
+
+  const user = await userModel.getUserByResetToken(token);
+  if (!user) return res.status(400).json({ message: 'Invalid or expired token.' });
+
+  userModel.resetPassword(user.id, password);
+
+  res.json({ message: 'Password updated.' });
 });
 
 export default router;
