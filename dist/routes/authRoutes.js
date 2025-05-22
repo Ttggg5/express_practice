@@ -45,6 +45,9 @@ router.post('/login', async (req, res) => {
         const valid = await bcryptjs_1.default.compare(password, user.password);
         if (!valid)
             return res.status(401).json({ message: 'Invalid password' });
+        const isVerified = await (0, userModel_1.isUserVerfied)(email);
+        if (!isVerified)
+            return res.status(401).json({ message: 'Email not verified yet' });
         req.session.userId = user.id;
         res.json({ message: 'Login successful', userId: user.id });
     }

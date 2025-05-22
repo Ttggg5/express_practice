@@ -3,9 +3,12 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import authRoutes from './routes/authRoutes';
+import dotenv from 'dotenv';
+dotenv.config();
+import createDB from './db';
 
 const app = express();
-const PORT = process.env.BACKEND_PORT || 5000;
+const PORT = process.env.BACKEND_PORT || 8000;
 
 // Middleware
 app.use(cors({
@@ -35,6 +38,13 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  const db = await createDB();
+  db.connect()
+    .then(() => console.log('✅ Connected to MySQL database'))
+    .catch((err) => {
+      console.error('❌ Database connection failed:', err.message);
+      process.exit(1);
+    });
 });
