@@ -3,13 +3,17 @@ import createDB from '../db';
 import { RowDataPacket, OkPacket, FieldPacket, OkPacketParams } from 'mysql2';
 
 export interface User {
-  id: number;
+  id: string;
   username: string;
   email: string;
   password: string;
   create_time: Date;
   is_verified: boolean;
   verify_token: string;
+  avatar: Blob;
+  bio: string;
+  location: string;
+  updated_at: Date;
 }
 
 // Get user by email and return User
@@ -23,21 +27,24 @@ export const getUserByEmail = (email: string): Promise<User | null> => {
 };
 
 // Get user by ID and return User with out password
-export const getUserById = (id: number): Promise<Omit<User, 'password'> | null> => {
+export const getUserById = (id: string): Promise<Omit<User, 'password'> | null> => {
   return new Promise(async (resolve, reject) => {
     const db = await createDB();
-    const sql = 'SELECT id, username, email, create_time FROM users WHERE id = ?';
+    const sql = 'SELECT id, username, email, create_time, is_verified, verify_token, bio, location, updated_at FROM users WHERE id = ?';
     const [rows] = await db.query<RowDataPacket[]>(sql, [id]);
     resolve(rows[0] as Omit<User, 'password'> || null);
   });
 };
 
 // Create new user and return user id
-export const createUser = (username: string, email: string, hashedPassword: string, token: string): Promise<number> => {
+export const createUser = (id: string, username: string, email: string, hashedPassword: string, token: string): Promise<number> => {
   return new Promise(async (resolve, reject) => {
+    if (!id.startsWith('@'))
+      id = '@' + id;
+
     const db = await createDB();
-    const sql = 'INSERT INTO users (username, email, password, create_time, verify_token) VALUES (?, ?, ?, NOW(), ?)';
-    const [result] = await db.query<OkPacket>(sql, [username, email, hashedPassword, token]);
+    const sql = 'INSERT INTO users (id, username, email, password, verify_token) VALUES (?, ?, ?, ?, ?)';
+    const [result] = await db.query<OkPacket>(sql, [id, username, email, hashedPassword, token]);
     resolve(result.insertId);
   });
 };
@@ -69,7 +76,7 @@ export const isUserVerfied = (email: string): Promise<boolean> => {
 }
 
 // set reset password token and expires date
-export const setResetToken = (userId: number, token: string, expires: Date): Promise<void> => {
+export const setResetToken = (userId: string, token: string, expires: Date): Promise<void> => {
   return new Promise(async (resolve, reject) => {
     const db = await createDB();
     await db.query(
@@ -92,7 +99,7 @@ export const getUserByResetToken = (token: string): Promise<User | null> => {
   });
 }
 
-export const resetPassword = (userId: number, newPassword: string): Promise<void> => {
+export const resetPassword = (userId: string, newPassword: string): Promise<void> => {
   return new Promise(async (resolve, reject) => {
     const db = await createDB();
     const hashed = await bcrypt.hash(newPassword, 10);
@@ -101,5 +108,21 @@ export const resetPassword = (userId: number, newPassword: string): Promise<void
       [hashed, userId]
     );
     resolve();
+  });
+}
+
+export const updateAvatar = (userId: string, avatar: Buffer): Promise<void> => {
+  return new Promise(async (resolve, reject) => {
+    const db = await createDB();
+    await db.query('UPDATE users SET avatar = ? WHERE id = ?', [avatar, userId]);
+    resolve();
+  });
+}
+
+export const getAvatar = (userId: string): Promise<Blob> => {
+  return new Promise(async (resolve, reject) => {
+    const db = await createDB();
+    const [rows]: any = await db.query('SELECT avatar FROM users WHERE id = ?', [userId]);
+    resolve(rows[0].avatar as Blob || null);
   });
 }

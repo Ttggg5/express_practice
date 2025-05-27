@@ -9,16 +9,19 @@ const router = Router();
 
 // Register
 router.post('/register', async (req: Request, res: Response) => {
-  const { username, email, password } = req.body;
+  const { id, username, email, password } = req.body;
 
   try {
-    const existingUser = await userModel.getUserByEmail(email);
+    var existingUser = await userModel.getUserById(id);
+    if (existingUser) return res.status(400).json({ message: 'Id already in use' });
+
+    existingUser = await userModel.getUserByEmail(email);
     if (existingUser) return res.status(400).json({ message: 'Email already in use' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const token = randomBytes(32).toString('hex') + await bcrypt.hash(email, 5);
 
-    const userId = await userModel.createUser(username, email, hashedPassword, token);
+    const userId = await userModel.createUser(id, username, email, hashedPassword, token);
 
     await sendVerificationEmail(email, token); // send email
 
