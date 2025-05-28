@@ -37,15 +37,15 @@ export const getUserById = (id: string): Promise<Omit<User, 'password'> | null> 
 };
 
 // Create new user and return user id
-export const createUser = (id: string, username: string, email: string, hashedPassword: string, token: string): Promise<number> => {
+export const createUser = (id: string, username: string, email: string, hashedPassword: string, token: string, avatar: Buffer): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     if (!id.startsWith('@'))
       id = '@' + id;
 
     const db = await createDB();
-    const sql = 'INSERT INTO users (id, username, email, password, verify_token) VALUES (?, ?, ?, ?, ?)';
-    const [result] = await db.query<OkPacket>(sql, [id, username, email, hashedPassword, token]);
-    resolve(result.insertId);
+    const sql = 'INSERT INTO users (id, username, email, password, verify_token, avatar) VALUES (?, ?, ?, ?, ?, ?)';
+    const [result] = await db.query<OkPacket>(sql, [id, username, email, hashedPassword, token, avatar]);
+    resolve(result.message);
   });
 };
 

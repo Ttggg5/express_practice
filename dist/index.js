@@ -7,7 +7,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const express_session_1 = __importDefault(require("express-session"));
-const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const auth_1 = __importDefault(require("./routes/auth"));
+const profile_1 = __importDefault(require("./routes/profile"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const db_1 = __importDefault(require("./db"));
@@ -31,7 +32,8 @@ app.use((0, express_session_1.default)({
     }
 }));
 // Routes
-app.use('/api/auth', authRoutes_1.default);
+app.use('/api/auth', auth_1.default);
+app.use('/api/profile', profile_1.default);
 // Root test route
 app.get('/', (req, res) => {
     res.send('Backend running with TypeScript');

@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import * as userModel from '../models/userModel';
 import { randomBytes } from 'crypto';
 import { sendVerificationEmail, sendResetEmail } from '../utils/mail';
-
+import fs from 'fs/promises';
+import appRoot from 'app-root-path'
 
 const router = Router();
 
@@ -21,11 +22,13 @@ router.post('/register', async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const token = randomBytes(32).toString('hex') + await bcrypt.hash(email, 5);
 
-    const userId = await userModel.createUser(id, username, email, hashedPassword, token);
+    const publicPath = appRoot.path + '/public';
+    const fileBuffer = await fs.readFile(publicPath + '/resource/avatarDefault.png');
+    await userModel.createUser(id, username, email, hashedPassword, token, fileBuffer);
 
     await sendVerificationEmail(email, token); // send email
 
-    res.status(201).json({ message: 'User registered. Please check your email to verify', userId });
+    res.status(201).json({ message: 'User registered. Please check your email to verify', id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
