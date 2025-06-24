@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendVerificationEmail = async (to: string, token: string) => {
-  const verifyUrl = `${process.env.FRONTEND_BASE_URL}/verify?token=${token}`;
+  const verifyUrl = `${process.env.FRONTEND_BASE_URL}/verify-email/${token}`;
 
   await transporter.sendMail({
     from: '"Your App" <no-reply@yourapp.com>',
@@ -20,12 +20,12 @@ export const sendVerificationEmail = async (to: string, token: string) => {
 };
 
 export const sendResetEmail = async (to: string, token: string) => {
-  const resetLink = `${process.env.FRONTEND_BASE_URL}/reset-password?token=${token}`;
+  const resetLink = `${process.env.FRONTEND_BASE_URL}/reset-password/${token}`;
 
   await transporter.sendMail({
     from: 'Your App <no-reply@yourapp.com>',
     to,
     subject: 'Reset Your Password',
-    html: `<p>Click to reset password: <a href="${resetLink}">${resetLink}</a></p>`
+    html: `<p>Click to reset password: <a href="${resetLink}">${resetLink}</a></p><br><br><p>This link will only work in 15 minutes.</p>`
   });
 };

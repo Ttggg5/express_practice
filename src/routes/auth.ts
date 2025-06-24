@@ -20,7 +20,7 @@ router.post('/register', async (req: Request, res: Response) => {
     if (existingUser) return res.status(400).json({ message: 'Email already in use' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const token = randomBytes(32).toString('hex') + await bcrypt.hash(email, 5);
+    const token = randomBytes(64).toString('hex');
 
     const publicPath = appRoot.path + '/public';
     const fileBuffer = await fs.readFile(publicPath + '/resource/avatarDefault.png');
@@ -36,7 +36,7 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // Verify user
-router.get('/verify', async (req: Request, res: Response) => {
+router.get('/verify-email', async (req: Request, res: Response) => {
   const { token } = req.query;
 
   if (typeof token !== 'string' || !await userModel.verifyUser(token)) {
@@ -96,7 +96,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
   const user = await userModel.getUserByEmail(email);
   if (!user) return res.status(200).json({ message: 'Email not regist' });
 
-  const token = randomBytes(32).toString('hex') + await bcrypt.hash(email, 5);
+  const token = randomBytes(64).toString('hex');
   const expires = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes
 
   await userModel.setResetToken(user.id, token, expires);
