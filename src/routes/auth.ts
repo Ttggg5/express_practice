@@ -82,10 +82,13 @@ router.post('/logout', (req: Request, res: Response) => {
 router.get('/me', async (req: Request, res: Response) => {
   if (req.session.userId) {
     const user = await userModel.getUserById(req.session.userId);
-    res.json({ message: 'User found', user});
+    res.json({ 
+      isLoggedIn: true,
+      userId: user?.id
+    });
   }
   else {
-    res.json({ message: 'No user logged in' });
+    res.json({ isLoggedIn: false });
   }
 });
 
