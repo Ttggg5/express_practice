@@ -20,7 +20,8 @@
     "express-session": "^1.18.1",
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",
-    "nodemailer": "^7.0.3"
+    "nodemailer": "^7.0.3",
+    "uuidv4": "^6.2.13"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

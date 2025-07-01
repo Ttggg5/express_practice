@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import * as userModel from '../models/userModel';
+import * as userModel from '../models/usersModel';
 import { randomBytes } from 'crypto';
 import { sendVerificationEmail, sendResetEmail } from '../utils/mail';
 import fs from 'fs/promises';

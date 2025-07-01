@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import * as userModel from '../models/userModel';
+import * as userModel from '../models/usersModel';
 import multer from 'multer';
 
 const router = Router();

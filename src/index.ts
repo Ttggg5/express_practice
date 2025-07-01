@@ -4,6 +4,7 @@ import cors from 'cors';
 import session from 'express-session';
 import authRoute from './routes/auth';
 import profileRoute from './routes/profile';
+import postRoutes from './routes/post';
 import dotenv from 'dotenv';
 dotenv.config();
 import createDB from './db';
@@ -33,6 +34,7 @@ app.use(session({
 // Routes
 app.use('/api/auth', authRoute);
 app.use('/api/profile', profileRoute);
+app.use('/api/posts', postRoutes);
 
 // Root test route
 app.get('/', (req: Request, res: Response) => {
