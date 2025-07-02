@@ -66,6 +66,18 @@ router.post('/:postId/unlike', async (req, res) => {
   }
 });
 
+router.get('/:postId/isLiked', async (req, res) => {
+  if (req.session.userId) {
+    try {
+      res.json({ isLiked: await postLikesModel.isLikedPost(req.session.userId, req.params.postId)});
+    } catch (err) {
+      res.status(500).json({ isLiked: false, message: 'Search failed' });
+    }
+  }
+  else {
+    res.json({ isLiked: false, message: 'Login first' });
+  }
+});
 
 // fetch latest posts by any user
 router.get('/recommended', async (req, res) => {

@@ -7,7 +7,7 @@ import profileRoute from './routes/profile';
 import postRoutes from './routes/post';
 import dotenv from 'dotenv';
 dotenv.config();
-import createDB from './db';
+import db from './db';
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 8000;
@@ -44,11 +44,4 @@ app.get('/', (req: Request, res: Response) => {
 // Start server
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  const db = await createDB();
-  db.connect()
-    .then(() => console.log('✅ Connected to MySQL database'))
-    .catch((err) => {
-      console.error('❌ Database connection failed:', err.message);
-      process.exit(1);
-    });
 });
