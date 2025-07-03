@@ -1,38 +1,68 @@
 import express from 'express';
-import db from '../db';
 import * as postsModel from '../models/postsModel';
 import * as postLikesModel from '../models/postLikesModel';
 import multer from 'multer';
 import path from 'path';
-import { uuid } from 'uuidv4';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+import appRoot from 'app-root-path'
 
 const router = express.Router();
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'public/uploads/posts/'),
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
+  destination: function (req, file, cb) {
+    const postId = req.postId as string;
+    const dir = path.join(appRoot.path, 'public', 'uploads', 'posts', postId);
+
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
   }
 });
 
-const uploadPostImage = multer({
+const upload = multer({
   storage,
-  limits: { fileSize: 16 * 1024 * 1024 }, // 16MB
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
-    if (allowedTypes.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('Only image files allowed'));
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Unsupported file type'));
   }
 });
 
-router.post('/create', uploadPostImage.single('image'), async (req, res) => {
-  const { content, userId, postType } = req.body;
-  const postId = uuid();
+router.post('/create', async (req, res, next) => {
+  
+  try {
+    if (!req.session.userId)
+      throw new Error('User not login');
 
-  await postsModel.createPost(postId, userId, content, postType);
+    const postId = uuidv4();
+    req.postId = postId; // custom prop for multer
 
-  res.json({ message: 'Post created', postId });
+    upload.array('files')(req, res, async function (err) {
+      if (err) return res.status(400).json({ message: err.message });
+
+      const { userId, content, postType } = req.body;
+      if (req.session.userId != userId) {
+        res.json({ message: 'Post create filed' });
+        return;
+      }
+
+      // Save post info to DB (with basic sample logic)
+      await postsModel.createPost(postId, userId, content, postType);
+
+      res.json({ message: 'Post created', postId });
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/:postId/like', async (req, res) => {
@@ -80,9 +110,9 @@ router.get('/:postId/isLiked', async (req, res) => {
 });
 
 // fetch latest posts by any user
-router.get('/recommended', async (req, res) => {
+router.get('/newest', async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const limit = 20;
   const offset = (page - 1) * limit;
 
   try {
@@ -90,6 +120,20 @@ router.get('/recommended', async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch posts' });
   }
+});
+
+router.get('/:postId/media', (req, res) => {
+  const { postId } = req.params;
+  const dirPath = path.join(appRoot.path, 'public', 'uploads', 'posts', postId);
+
+  if (!fs.existsSync(dirPath)) {
+    return res.status(404).json({ message: 'No media found for this post' });
+  }
+
+  const files = fs.readdirSync(dirPath);
+  const fileUrls = files.map(file => `/uploads/posts/${postId}/${file}`);
+
+  res.json(fileUrls); // e.g., ["/uploads/abc123/image-1.jpg", ...]
 });
 
 export default router;

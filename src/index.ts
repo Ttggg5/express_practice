@@ -8,16 +8,20 @@ import postRoutes from './routes/post';
 import dotenv from 'dotenv';
 dotenv.config();
 import db from './db';
+import path from 'path';
+import appRoot from 'app-root-path'
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 8000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_BASE_URL, // frontend URL
-  credentials: true               // allow cookies from frontend
+  origin: true, // frontend URL
+  credentials: true // allow cookies from frontend
 }));
 app.use(express.json());
+
+app.use('/uploads', express.static(path.join(appRoot.path, 'public', 'uploads')));
 
 // 🔐 Session config
 app.use(session({

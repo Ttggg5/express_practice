@@ -38,7 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const userModel = __importStar(require("../models/userModel"));
+const userModel = __importStar(require("../models/usersModel"));
 const crypto_1 = require("crypto");
 const mail_1 = require("../utils/mail");
 const promises_1 = __importDefault(require("fs/promises"));
@@ -55,11 +55,10 @@ router.post('/register', async (req, res) => {
         if (existingUser)
             return res.status(400).json({ message: 'Email already in use' });
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
-        const token = (0, crypto_1.randomBytes)(32).toString('hex') + await bcryptjs_1.default.hash(email, 5);
+        const token = (0, crypto_1.randomBytes)(64).toString('hex');
         const publicPath = app_root_path_1.default.path + '/public';
         const fileBuffer = await promises_1.default.readFile(publicPath + '/resource/avatarDefault.png');
-        const blob = new Blob([fileBuffer]);
-        await userModel.createUser(id, username, email, hashedPassword, token, blob);
+        await userModel.createUser(id, username, email, hashedPassword, token, fileBuffer);
         await (0, mail_1.sendVerificationEmail)(email, token); // send email
         res.status(201).json({ message: 'User registered. Please check your email to verify', id });
     }
@@ -69,7 +68,7 @@ router.post('/register', async (req, res) => {
     }
 });
 // Verify user
-router.get('/verify', async (req, res) => {
+router.get('/verify-email', async (req, res) => {
     const { token } = req.query;
     if (typeof token !== 'string' || !await userModel.verifyUser(token)) {
         return res.status(400).json({ message: 'Invalid token' });
@@ -110,10 +109,13 @@ router.post('/logout', (req, res) => {
 router.get('/me', async (req, res) => {
     if (req.session.userId) {
         const user = await userModel.getUserById(req.session.userId);
-        res.json({ message: 'User found', user });
+        res.json({
+            isLoggedIn: true,
+            userId: user?.id
+        });
     }
     else {
-        res.json({ message: 'No user logged in' });
+        res.json({ isLoggedIn: false });
     }
 });
 // forgot password
@@ -122,7 +124,7 @@ router.post('/forgot-password', async (req, res) => {
     const user = await userModel.getUserByEmail(email);
     if (!user)
         return res.status(200).json({ message: 'Email not regist' });
-    const token = (0, crypto_1.randomBytes)(32).toString('hex') + await bcryptjs_1.default.hash(email, 5);
+    const token = (0, crypto_1.randomBytes)(64).toString('hex');
     const expires = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes
     await userModel.setResetToken(user.id, token, expires);
     await (0, mail_1.sendResetEmail)(email, token);

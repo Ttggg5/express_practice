@@ -5,3 +5,9 @@ declare module 'express-session' {
     userId?: string;
   }
 }
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    postId?: string;
+  }
+}
