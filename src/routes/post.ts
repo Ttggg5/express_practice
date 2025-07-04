@@ -84,7 +84,7 @@ router.post('/:postId/unlike', async (req, res) => {
   if (req.session.userId) {
     try {
       await postLikesModel.unlikePost(req.session.userId, req.params.postId);
-      await postsModel.rmovePostLike(req.params.postId);
+      await postsModel.removePostLike(req.params.postId);
 
       res.json({ isSuccessed: true, message: 'Unliked post' });
     } catch (err) {
@@ -134,6 +134,16 @@ router.get('/:postId/media', (req, res) => {
   const fileUrls = files.map(file => `/uploads/posts/${postId}/${file}`);
 
   res.json(fileUrls); // e.g., ["/uploads/abc123/image-1.jpg", ...]
+});
+
+router.get('/search', async (req, res) => {
+  const q = (req.query.q as string || '').trim();
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
+  if (!q) return res.json([]);
+
+  res.json(await postsModel.searchPosts(q, limit, offset));
 });
 
 export default router;

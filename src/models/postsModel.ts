@@ -1,3 +1,4 @@
+import { off } from 'process';
 import db from '../db';
 import { RowDataPacket, OkPacket, FieldPacket, OkPacketParams } from 'mysql2';
 
@@ -36,7 +37,7 @@ export const addPostLike = (postId: string): Promise<string> => {
   });
 };
 
-export const rmovePostLike = (postId: string): Promise<string> => {
+export const removePostLike = (postId: string): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     const sql = 'UPDATE posts SET like_count = like_count - 1 WHERE id = ?';
     const [result] = await db.query<OkPacket>(sql, [postId]);
@@ -54,6 +55,14 @@ export const getPostsOrderByTime = (limit: number, offset: number): Promise<Post
       LIMIT ? OFFSET ?
     `;
     const [rows] = await db.query<RowDataPacket[]>(sql, [limit, offset]);
+    resolve(rows as Post[] || null);
+  });
+};
+
+export const searchPosts = (keyWords: string, limit: number, offset:number): Promise<Post[] | null> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = `SELECT * FROM posts WHERE content LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    const [rows] = await db.query<RowDataPacket[]>(sql, [`%${keyWords}%`, limit, offset]);
     resolve(rows as Post[] || null);
   });
 };
