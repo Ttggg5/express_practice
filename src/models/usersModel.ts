@@ -12,7 +12,6 @@ export interface User {
   verify_token: string;
   avatar: Blob;
   bio: string;
-  location: string;
   updated_at: Date;
 }
 
@@ -28,7 +27,7 @@ export const getUserByEmail = (email: string): Promise<User | null> => {
 // Get user by ID and return User with out password
 export const getUserById = (id: string): Promise<Omit<User, 'password'> | null> => {
   return new Promise(async (resolve, reject) => {
-    const sql = 'SELECT id, username, email, create_time, is_verified, verify_token, bio, location, updated_at FROM users WHERE id = ?';
+    const sql = 'SELECT id, username, email, create_time, is_verified, verify_token, bio, updated_at FROM users WHERE id = ?';
     const [rows] = await db.query<RowDataPacket[]>(sql, [id]);
     resolve(rows[0] as Omit<User, 'password'> || null);
   });

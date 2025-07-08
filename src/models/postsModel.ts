@@ -61,8 +61,30 @@ export const getPostsOrderByTime = (limit: number, offset: number): Promise<Post
 
 export const searchPosts = (keyWords: string, limit: number, offset:number): Promise<Post[] | null> => {
   return new Promise(async (resolve, reject) => {
-    const sql = `SELECT * FROM posts WHERE content LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    const sql = `
+      SELECT posts.id, posts.user_id, posts.content, posts.post_type, posts.like_count, posts.dislike_count, posts.share_count, posts.created_at, posts.comment_count, users.username
+      FROM posts
+      JOIN users ON posts.user_id = users.id
+      WHERE content LIKE ? 
+      ORDER BY created_at DESC 
+      LIMIT ? OFFSET ?
+    `;
     const [rows] = await db.query<RowDataPacket[]>(sql, [`%${keyWords}%`, limit, offset]);
+    resolve(rows as Post[] || null);
+  });
+};
+
+export const getUserPosts = (userId: string, limit: number, offset:number): Promise<Post[] | null> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = `
+      SELECT posts.id, posts.user_id, posts.content, posts.post_type, posts.like_count, posts.dislike_count, posts.share_count, posts.created_at, posts.comment_count, users.username
+      FROM posts
+      JOIN users ON posts.user_id = users.id
+      WHERE posts.user_id = ?
+      ORDER BY created_at DESC 
+      LIMIT ? OFFSET ?
+    `;
+    const [rows] = await db.query<RowDataPacket[]>(sql, [userId, limit, offset]);
     resolve(rows as Post[] || null);
   });
 };

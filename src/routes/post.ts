@@ -146,4 +146,14 @@ router.get('/search', async (req, res) => {
   res.json(await postsModel.searchPosts(q, limit, offset));
 });
 
+router.get('/user/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
+  if (!userId) return res.json([]);
+
+  res.json(await postsModel.getUserPosts(userId, limit, offset));
+});
+
 export default router;
