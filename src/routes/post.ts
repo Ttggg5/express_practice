@@ -38,25 +38,26 @@ const upload = multer({
 });
 
 router.post('/create', async (req, res, next) => {
-  
   try {
     if (!req.session.userId)
-      throw new Error('User not login');
+      return res.status(400).json({ message: 'User not login' });
 
     const postId = uuidv4();
     req.postId = postId; // custom prop for multer
 
     upload.array('files')(req, res, async function (err) {
-      if (err) return res.status(400).json({ message: err.message });
-
-      const { userId, content, postType } = req.body;
-      if (req.session.userId != userId) {
-        res.json({ message: 'Post create filed' });
-        return;
+      if (err) {
+        const dir = path.join(appRoot.path, 'public', 'uploads', 'posts', postId);
+        fs.rmdirSync(dir);
+        return res.status(400).json({ message: err.message });
       }
 
+      const { content } = req.body;
+      if (!req.session.userId)
+        return res.status(400).json({ message: 'Post create filed' });
+
       // Save post info to DB (with basic sample logic)
-      await postsModel.createPost(postId, userId, content, postType);
+      await postsModel.createPost(postId, req.session.userId, content);
 
       res.json({ message: 'Post created', postId });
     });
@@ -127,13 +128,13 @@ router.get('/:postId/media', (req, res) => {
   const dirPath = path.join(appRoot.path, 'public', 'uploads', 'posts', postId);
 
   if (!fs.existsSync(dirPath)) {
-    return res.status(404).json({ message: 'No media found for this post' });
+    return res.json({ message: 'No media found for this post' });
   }
 
   const files = fs.readdirSync(dirPath);
   const fileUrls = files.map(file => `/uploads/posts/${postId}/${file}`);
 
-  res.json(fileUrls); // e.g., ["/uploads/abc123/image-1.jpg", ...]
+  res.json({ urls: fileUrls }); // e.g., ["/uploads/abc123/image-1.jpg", ...]
 });
 
 router.get('/search', async (req, res) => {

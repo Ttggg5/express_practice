@@ -13,6 +13,8 @@ export interface User {
   avatar: Blob;
   bio: string;
   updated_at: Date;
+  reset_token: string;
+  reset_token_expires: Date;
 }
 
 // Get user by email and return User
