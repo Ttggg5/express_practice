@@ -10,16 +10,20 @@ const express_session_1 = __importDefault(require("express-session"));
 const auth_1 = __importDefault(require("./routes/auth"));
 const profile_1 = __importDefault(require("./routes/profile"));
 const post_1 = __importDefault(require("./routes/post"));
+const user_1 = __importDefault(require("./routes/user"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+const path_1 = __importDefault(require("path"));
+const app_root_path_1 = __importDefault(require("app-root-path"));
 const app = (0, express_1.default)();
 const PORT = process.env.BACKEND_PORT || 8000;
 // Middleware
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_BASE_URL, // frontend URL
+    origin: true, // frontend URL
     credentials: true // allow cookies from frontend
 }));
 app.use(express_1.default.json());
+app.use('/uploads', express_1.default.static(path_1.default.join(app_root_path_1.default.path, 'public', 'uploads')));
 // 🔐 Session config
 app.use((0, express_session_1.default)({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
@@ -28,13 +32,14 @@ app.use((0, express_session_1.default)({
     cookie: {
         secure: false, // true in production with HTTPS
         httpOnly: true,
-        maxAge: 1000 * 60 * 60 // 1 hour
+        maxAge: 1000 * 60 * 60 * 12 // 12 hours
     }
 }));
 // Routes
 app.use('/api/auth', auth_1.default);
 app.use('/api/profile', profile_1.default);
 app.use('/api/posts', post_1.default);
+app.use('/api/user', user_1.default);
 // Root test route
 app.get('/', (req, res) => {
     res.send('Backend running with TypeScript');

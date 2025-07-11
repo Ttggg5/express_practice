@@ -47,7 +47,14 @@ router.get('/:id', async (req, res) => {
     const user = await userModel.getUserById(userId);
     if (!user)
         return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    const userSafe = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        create_time: user.create_time,
+        bio: user.bio,
+    };
+    res.json(userSafe);
 });
 router.get('/avatar/:id', async (req, res) => {
     const avatar = await userModel.getAvatar(req.params.id);

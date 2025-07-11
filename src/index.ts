@@ -5,6 +5,7 @@ import session from 'express-session';
 import authRoute from './routes/auth';
 import profileRoute from './routes/profile';
 import postRoutes from './routes/post';
+import userRoutes from './routes/user';
 import dotenv from 'dotenv';
 dotenv.config();
 import db from './db';
@@ -31,7 +32,7 @@ app.use(session({
   cookie: {
     secure: false,    // true in production with HTTPS
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 // 1 hour
+    maxAge: 1000 * 60 * 60 * 12 // 12 hours
   }
 }));
 
@@ -39,6 +40,7 @@ app.use(session({
 app.use('/api/auth', authRoute);
 app.use('/api/profile', profileRoute);
 app.use('/api/posts', postRoutes);
+app.use('/api/user', userRoutes);
 
 // Root test route
 app.get('/', (req: Request, res: Response) => {

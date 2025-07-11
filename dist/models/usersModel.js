@@ -18,7 +18,7 @@ exports.getUserByEmail = getUserByEmail;
 // Get user by ID and return User with out password
 const getUserById = (id) => {
     return new Promise(async (resolve, reject) => {
-        const sql = 'SELECT id, username, email, create_time, is_verified, verify_token, bio, location, updated_at FROM users WHERE id = ?';
+        const sql = 'SELECT id, username, email, create_time, is_verified, verify_token, bio, updated_at FROM users WHERE id = ?';
         const [rows] = await db_1.default.query(sql, [id]);
         resolve(rows[0] || null);
     });

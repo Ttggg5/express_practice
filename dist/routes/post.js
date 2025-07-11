@@ -43,11 +43,12 @@ const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const uuid_1 = require("uuid");
+const app_root_path_1 = __importDefault(require("app-root-path"));
 const router = express_1.default.Router();
 const storage = multer_1.default.diskStorage({
     destination: function (req, file, cb) {
         const postId = req.postId;
-        const dir = path_1.default.join(__dirname, '..', 'public', 'uploads', postId);
+        const dir = path_1.default.join(app_root_path_1.default.path, 'public', 'uploads', 'posts', postId);
         if (!fs_1.default.existsSync(dir)) {
             fs_1.default.mkdirSync(dir, { recursive: true });
         }
@@ -61,7 +62,7 @@ const storage = multer_1.default.diskStorage({
 });
 const upload = (0, multer_1.default)({
     storage,
-    limits: { fileSize: 16 * 1024 * 1024 }, // 16MB
+    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
     fileFilter: (req, file, cb) => {
         const allowed = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'];
         if (allowed.includes(file.mimetype))
@@ -71,17 +72,22 @@ const upload = (0, multer_1.default)({
     }
 });
 router.post('/create', async (req, res, next) => {
-    const { userId, content, postType } = req.body;
     try {
-        if (req.session.userId != userId)
-            throw new Error('User not login');
+        if (!req.session.userId)
+            return res.status(400).json({ message: 'User not login' });
         const postId = (0, uuid_1.v4)();
         req.postId = postId; // custom prop for multer
         upload.array('files')(req, res, async function (err) {
-            if (err)
+            if (err) {
+                const dir = path_1.default.join(app_root_path_1.default.path, 'public', 'uploads', 'posts', postId);
+                fs_1.default.rmdirSync(dir);
                 return res.status(400).json({ message: err.message });
+            }
+            const { content } = req.body;
+            if (!req.session.userId)
+                return res.status(400).json({ message: 'Post create filed' });
             // Save post info to DB (with basic sample logic)
-            await postsModel.createPost(postId, userId, content, postType);
+            await postsModel.createPost(postId, req.session.userId, content);
             res.json({ message: 'Post created', postId });
         });
     }
@@ -108,7 +114,7 @@ router.post('/:postId/unlike', async (req, res) => {
     if (req.session.userId) {
         try {
             await postLikesModel.unlikePost(req.session.userId, req.params.postId);
-            await postsModel.rmovePostLike(req.params.postId);
+            await postsModel.removePostLike(req.params.postId);
             res.json({ isSuccessed: true, message: 'Unliked post' });
         }
         catch (err) {
@@ -144,12 +150,32 @@ router.get('/newest', async (req, res) => {
         res.status(500).json({ message: 'Failed to fetch posts' });
     }
 });
-router.get('/:postId/media', async (req, res) => {
-    try {
-        res.json();
+router.get('/:postId/media', (req, res) => {
+    const { postId } = req.params;
+    const dirPath = path_1.default.join(app_root_path_1.default.path, 'public', 'uploads', 'posts', postId);
+    if (!fs_1.default.existsSync(dirPath)) {
+        return res.json({ message: 'No media found for this post' });
     }
-    catch (err) {
-        res.status(500).json({ message: 'Failed to fetch posts' });
-    }
+    const files = fs_1.default.readdirSync(dirPath);
+    const fileUrls = files.map(file => `/uploads/posts/${postId}/${file}`);
+    res.json({ urls: fileUrls }); // e.g., ["/uploads/abc123/image-1.jpg", ...]
+});
+router.get('/search', async (req, res) => {
+    const q = (req.query.q || '').trim();
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+    if (!q)
+        return res.json([]);
+    res.json(await postsModel.searchPosts(q, limit, offset));
+});
+router.get('/user/:userId', async (req, res) => {
+    const { userId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+    if (!userId)
+        return res.json([]);
+    res.json(await postsModel.getUserPosts(userId, limit, offset));
 });
 exports.default = router;
