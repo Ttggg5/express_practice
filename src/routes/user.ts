@@ -62,12 +62,18 @@ router.get('/:id/follow-count', async (req, res) => {
 
 router.get('/:id/followers', async (req, res) => {
   const userId = decodeURIComponent(req.params.id);
-  res.json(await followsModelModel.getFollowers(userId));
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
+  res.json(await followsModelModel.getFollowers(userId, limit, offset));
 });
 
 router.get('/:id/following', async (req, res) => {
   const userId = decodeURIComponent(req.params.id);
-  res.json(await followsModelModel.getFollowing(userId));
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
+  res.json(await followsModelModel.getFollowing(userId, limit, offset));
 });
 
 
