@@ -111,9 +111,21 @@ export const updateAvatar = (userId: string, avatar: Buffer): Promise<void> => {
   });
 }
 
-export const getAvatar = (userId: string): Promise<Blob> => {
+export const getAvatar = (userId: string): Promise<Blob | null> => {
   return new Promise(async (resolve, reject) => {
     const [rows]: any = await db.query('SELECT avatar FROM users WHERE id = ?', [userId]);
-    resolve(rows[0].avatar as Blob || null);
+    try {
+      resolve(rows[0].avatar as Blob);
+    } catch {
+      resolve(null);
+    }
   });
 }
+
+export const searchUserId = (id: string, limit: number, offset: number): Promise<any> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = 'SELECT id, username FROM users WHERE id LIKE ? LIMIT ? OFFSET ?';
+    const [rows] = await db.query<RowDataPacket[]>(sql, [`%${id}%`, limit, offset]);
+    resolve(rows);
+  });
+};

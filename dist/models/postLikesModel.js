@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isLikedPost = exports.unlikePost = exports.likePost = void 0;
+exports.deletePostAllLikes = exports.isLikedPost = exports.unlikePost = exports.likePost = void 0;
 const db_1 = __importDefault(require("../db"));
 const likePost = (userId, postId) => {
     return new Promise(async (resolve, reject) => {
@@ -29,3 +29,11 @@ const isLikedPost = (userId, postId) => {
     });
 };
 exports.isLikedPost = isLikedPost;
+const deletePostAllLikes = (postId) => {
+    return new Promise(async (resolve, reject) => {
+        const sql = 'DELETE FROM post_likes WHERE post_id = ?';
+        const [result] = await db_1.default.query(sql, [postId]);
+        resolve(result.message);
+    });
+};
+exports.deletePostAllLikes = deletePostAllLikes;

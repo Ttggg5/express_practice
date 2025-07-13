@@ -4,31 +4,6 @@ import multer from 'multer';
 
 const router = Router();
 
-router.get('/:id', async (req, res) => {
-  const userId = req.params.id;
-  if (!userId.startsWith('@')) return res.status(400).json({ message: 'Invalid ID' });
-
-  const user = await userModel.getUserById(userId);
-  if (!user) return res.status(404).json({ message: 'User not found' });
-
-  const userSafe = {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    create_time: user.create_time,
-    bio: user.bio,
-  }
-  res.json(userSafe);
-});
-
-router.get('/avatar/:id', async (req, res) => {
-  const avatar = await userModel.getAvatar(req.params.id);
-  if (!avatar) return res.sendStatus(404);
-
-  res.set('Content-Type', 'image/jpeg');
-  res.send(avatar);
-});
-
 // Multer config — store file in memory as Buffer
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -59,6 +34,15 @@ router.post('/avatar/upload/:id', upload.single('avatar'), async (req, res) => {
   }
 });
 
+router.get('/avatar/:id', async (req, res) => {
+  const userId = decodeURIComponent(req.params.id);
+  const avatar = await userModel.getAvatar(userId);
+  if (!avatar) return res.send(null);
+
+  res.set('Content-Type', 'image/jpeg');
+  res.send(avatar);
+});
+
 router.use((err: any, req: Request, res: Response, next: NextFunction) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ message: 'File too large. Max size is 16MB.' });
@@ -68,5 +52,23 @@ router.use((err: any, req: Request, res: Response, next: NextFunction) => {
   }
   next(err);
 });
+
+router.get('/:id', async (req, res) => {
+  const userId = req.params.id;
+  if (!userId.startsWith('@')) return res.status(400).json({ message: 'Invalid ID' });
+
+  const user = await userModel.getUserById(userId);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  const userSafe = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    create_time: user.create_time,
+    bio: user.bio,
+  }
+  res.json(userSafe);
+});
+
 
 export default router;

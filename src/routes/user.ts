@@ -1,7 +1,18 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as followsModelModel from '../models/followsModel';
-import db from '../db';
+import * as userModel from '../models/usersModel'
 const router = Router();
+
+router.get('/search', async (req, res) => {
+  const q = (req.query.q as string || '').trim();
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
+  if (!q) return res.json([]);
+
+  res.json(await userModel.searchUserId(q, limit, offset));
+});
+
 
 router.post('/follow', async (req, res) => {
   if (!req.session.userId) return res.status(400).json({ message: 'Login first' });

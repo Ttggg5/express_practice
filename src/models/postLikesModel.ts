@@ -30,3 +30,11 @@ export const isLikedPost = (userId: string, postId: string): Promise<boolean> =>
     resolve(row[0] ? true : false);
   });
 };
+
+export const deletePostAllLikes = (postId: string): Promise<string> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = 'DELETE FROM post_likes WHERE post_id = ?';
+    const [result] = await db.query<OkPacket>(sql, [postId]);
+    resolve(result.message);
+  });
+};

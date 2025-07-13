@@ -1,6 +1,7 @@
 import express from 'express';
 import * as postsModel from '../models/postsModel';
 import * as postLikesModel from '../models/postLikesModel';
+import * as commentsModel from '../models/commentsModel';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -63,6 +64,51 @@ router.post('/create', async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+});
+
+router.get('/search', async (req, res) => {
+  const q = (req.query.q as string || '').trim();
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
+  if (!q) return res.json([]);
+
+  res.json(await postsModel.searchPosts(q, limit, offset));
+});
+
+
+/**
+ * DELETE /api/posts/:id
+ * Requires:   session.user.id  ===  post.user_id   (owner‑only)
+ * Deletes:    post row, related likes/comments, media folder
+ */
+router.delete('/:postId', async (req, res) => {
+  const postId = req.params.postId;
+  const sessionUserId = req.session.userId;
+
+  try {
+    // 1) Verify ownership
+    const post: postsModel.Post = await postsModel.getPost(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    if (post.user_id !== sessionUserId)
+      return res.status(403).json({ message: 'Not your post' });
+
+    // 2) Delete related tables (likes, comments, follows share etc.)
+    await postLikesModel.deletePostAllLikes(postId);
+    await commentsModel.deleteAllComments(postId);
+
+    // 3) Delete post row
+    await postsModel.deletePost(postId);
+
+    // 4) Delete media folder (if exists)
+    const dir = path.join(appRoot.path, 'public', 'uploads', 'posts', postId);
+    if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Deletion failed' });
   }
 });
 
@@ -137,14 +183,9 @@ router.get('/:postId/media', (req, res) => {
   res.json({ urls: fileUrls }); // e.g., ["/uploads/abc123/image-1.jpg", ...]
 });
 
-router.get('/search', async (req, res) => {
-  const q = (req.query.q as string || '').trim();
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = 10;
-  const offset = (page - 1) * limit;
-  if (!q) return res.json([]);
-
-  res.json(await postsModel.searchPosts(q, limit, offset));
+router.get('/:postId', async (req, res) => {
+  const { postId } = req.params;
+  res.json(await postsModel.getPost(postId));
 });
 
 router.get('/user/:userId', async (req, res) => {
@@ -156,5 +197,4 @@ router.get('/user/:userId', async (req, res) => {
 
   res.json(await postsModel.getUserPosts(userId, limit, offset));
 });
-
 export default router;

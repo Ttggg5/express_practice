@@ -22,6 +22,27 @@ export const createPost = (postId: string, userId: string, content: string): Pro
   });
 };
 
+export const getPost = (postId: string): Promise<Post> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = `
+      SELECT posts.id, posts.user_id, posts.content, posts.like_count, posts.dislike_count, posts.share_count, posts.created_at, posts.comment_count, users.username
+      FROM posts
+      JOIN users ON posts.user_id = users.id
+      WHERE posts.id = ?
+    `;
+    const [rows] = await db.query<RowDataPacket[]>(sql, [postId]);
+    resolve(rows[0] as Post);
+  });
+};
+
+export const deletePost = (postId: string): Promise<string> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = 'DELETE FROM posts WHERE id = ?';
+    const [result] = await db.query<OkPacket>(sql, [postId]);
+    resolve(result.message);
+  });
+};
+
 export const addPostLike = (postId: string): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     const sql = 'UPDATE posts SET like_count = like_count + 1 WHERE id = ?';

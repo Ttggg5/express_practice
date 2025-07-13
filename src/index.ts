@@ -4,13 +4,14 @@ import cors from 'cors';
 import session from 'express-session';
 import authRoute from './routes/auth';
 import profileRoute from './routes/profile';
-import postRoutes from './routes/post';
+import postRoutes from './routes/posts';
 import userRoutes from './routes/user';
 import dotenv from 'dotenv';
-dotenv.config();
-import db from './db';
 import path from 'path';
 import appRoot from 'app-root-path'
+import os from 'os'
+
+dotenv.config({path: path.join(appRoot.path, '.env')});
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 8000;
@@ -30,7 +31,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false,    // true in production with HTTPS
+    secure: false, // true in production with HTTPS
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 12 // 12 hours
   }
@@ -49,5 +50,16 @@ app.get('/', (req: Request, res: Response) => {
 
 // Start server
 app.listen(PORT, async () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  const networkInterfaces = os.networkInterfaces();
+
+  for (const interfaceName in networkInterfaces) {
+    const addresses = networkInterfaces[interfaceName];
+    for (const addr of addresses as any) {
+      if ((addr.family === 'IPv4') && !addr.internal) {
+        console.log(`Interface: ${interfaceName}, IP Address: ${addr.address}`);
+        console.log(`🚀 Server running on http://${addr.address}:${PORT}`);
+        process.env.FRONTEND_BASE_URL = addr.address;
+      }
+    }
+  }
 });

@@ -40,29 +40,6 @@ const express_1 = require("express");
 const userModel = __importStar(require("../models/usersModel"));
 const multer_1 = __importDefault(require("multer"));
 const router = (0, express_1.Router)();
-router.get('/:id', async (req, res) => {
-    const userId = req.params.id;
-    if (!userId.startsWith('@'))
-        return res.status(400).json({ message: 'Invalid ID' });
-    const user = await userModel.getUserById(userId);
-    if (!user)
-        return res.status(404).json({ message: 'User not found' });
-    const userSafe = {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        create_time: user.create_time,
-        bio: user.bio,
-    };
-    res.json(userSafe);
-});
-router.get('/avatar/:id', async (req, res) => {
-    const avatar = await userModel.getAvatar(req.params.id);
-    if (!avatar)
-        return res.sendStatus(404);
-    res.set('Content-Type', 'image/jpeg');
-    res.send(avatar);
-});
 // Multer config — store file in memory as Buffer
 const storage = multer_1.default.memoryStorage();
 const upload = (0, multer_1.default)({
@@ -92,6 +69,14 @@ router.post('/avatar/upload/:id', upload.single('avatar'), async (req, res) => {
         res.status(500).json({ message: 'Error uploading avatar' });
     }
 });
+router.get('/avatar/:id', async (req, res) => {
+    const userId = decodeURIComponent(req.params.id);
+    const avatar = await userModel.getAvatar(userId);
+    if (!avatar)
+        return res.send(null);
+    res.set('Content-Type', 'image/jpeg');
+    res.send(avatar);
+});
 router.use((err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(413).json({ message: 'File too large. Max size is 16MB.' });
@@ -100,5 +85,21 @@ router.use((err, req, res, next) => {
         return res.status(400).json({ message: err.message });
     }
     next(err);
+});
+router.get('/:id', async (req, res) => {
+    const userId = req.params.id;
+    if (!userId.startsWith('@'))
+        return res.status(400).json({ message: 'Invalid ID' });
+    const user = await userModel.getUserById(userId);
+    if (!user)
+        return res.status(404).json({ message: 'User not found' });
+    const userSafe = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        create_time: user.create_time,
+        bio: user.bio,
+    };
+    res.json(userSafe);
 });
 exports.default = router;

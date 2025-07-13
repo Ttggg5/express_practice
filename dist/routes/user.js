@@ -35,7 +35,17 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const followsModelModel = __importStar(require("../models/followsModel"));
+const userModel = __importStar(require("../models/usersModel"));
 const router = (0, express_1.Router)();
+router.get('/search', async (req, res) => {
+    const q = (req.query.q || '').trim();
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+    if (!q)
+        return res.json([]);
+    res.json(await userModel.searchUserId(q, limit, offset));
+});
 router.post('/follow', async (req, res) => {
     if (!req.session.userId)
         return res.status(400).json({ message: 'Login first' });
@@ -70,7 +80,34 @@ router.post('/following-status', async (req, res) => {
     const { followerId, followingId } = req.body;
     if (!followerId || !followingId)
         return res.json({ isFollowing: false });
-    const [rows] = await followsModelModel.followingStatus(followerId, followingId);
+    const rows = await followsModelModel.followingStatus(followerId, followingId);
     res.json({ isFollowing: rows.length > 0 });
+});
+// GET /api/user/:id/follow-count
+router.get('/:id/follow-count', async (req, res) => {
+    const userId = decodeURIComponent(req.params.id);
+    try {
+        const followerCount = await followsModelModel.followerCount(userId);
+        const followingCount = await followsModelModel.followingCount(userId);
+        res.json({ followerCount: followerCount, followingCount: followingCount });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to fetch follow count' });
+    }
+});
+router.get('/:id/followers', async (req, res) => {
+    const userId = decodeURIComponent(req.params.id);
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+    res.json(await followsModelModel.getFollowers(userId, limit, offset));
+});
+router.get('/:id/following', async (req, res) => {
+    const userId = decodeURIComponent(req.params.id);
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+    res.json(await followsModelModel.getFollowing(userId, limit, offset));
 });
 exports.default = router;
