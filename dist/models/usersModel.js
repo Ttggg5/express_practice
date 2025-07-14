@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchUserId = exports.getAvatar = exports.updateAvatar = exports.resetPassword = exports.getUserByResetToken = exports.setResetToken = exports.isUserVerfied = exports.verifyUser = exports.createUser = exports.getUserById = exports.getUserByEmail = void 0;
+exports.searchUserFromIdName = exports.getAvatar = exports.updateAvatar = exports.resetPassword = exports.getUserByResetToken = exports.setResetToken = exports.isUserVerfied = exports.verifyUser = exports.createUser = exports.getUserById = exports.getUserByEmail = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const db_1 = __importDefault(require("../db"));
 // Get user by email and return User
@@ -94,7 +94,7 @@ const getAvatar = (userId) => {
     return new Promise(async (resolve, reject) => {
         const [rows] = await db_1.default.query('SELECT avatar FROM users WHERE id = ?', [userId]);
         try {
-            resolve(rows.avatar);
+            resolve(rows[0].avatar);
         }
         catch {
             resolve(null);
@@ -102,11 +102,11 @@ const getAvatar = (userId) => {
     });
 };
 exports.getAvatar = getAvatar;
-const searchUserId = (id, limit, offset) => {
+const searchUserFromIdName = (keyword, limit, offset) => {
     return new Promise(async (resolve, reject) => {
-        const sql = 'SELECT id, username FROM users WHERE id LIKE ? LIMIT ? OFFSET ?';
-        const [rows] = await db_1.default.query(sql, [`%${id}%`, limit, offset]);
+        const sql = 'SELECT id, username FROM users WHERE id LIKE ? or username LIKE ? LIMIT ? OFFSET ?';
+        const [rows] = await db_1.default.query(sql, [`%${keyword}%`, `%${keyword}%`, limit, offset]);
         resolve(rows);
     });
 };
-exports.searchUserId = searchUserId;
+exports.searchUserFromIdName = searchUserFromIdName;

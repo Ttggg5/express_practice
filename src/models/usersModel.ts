@@ -122,10 +122,10 @@ export const getAvatar = (userId: string): Promise<Blob | null> => {
   });
 }
 
-export const searchUserId = (id: string, limit: number, offset: number): Promise<any> => {
+export const searchUserFromIdName = (keyword: string, limit: number, offset: number): Promise<any> => {
   return new Promise(async (resolve, reject) => {
-    const sql = 'SELECT id, username FROM users WHERE id LIKE ? LIMIT ? OFFSET ?';
-    const [rows] = await db.query<RowDataPacket[]>(sql, [`%${id}%`, limit, offset]);
+    const sql = 'SELECT id, username FROM users WHERE id LIKE ? or username LIKE ? LIMIT ? OFFSET ?';
+    const [rows] = await db.query<RowDataPacket[]>(sql, [`%${keyword}%`, `%${keyword}%`, limit, offset]);
     resolve(rows);
   });
 };

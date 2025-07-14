@@ -8,8 +8,8 @@ import postRoutes from './routes/posts';
 import userRoutes from './routes/user';
 import dotenv from 'dotenv';
 import path from 'path';
-import appRoot from 'app-root-path'
-import os from 'os'
+import appRoot from 'app-root-path';
+import os from 'os';
 
 dotenv.config({path: path.join(appRoot.path, '.env')});
 

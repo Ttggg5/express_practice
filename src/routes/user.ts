@@ -10,7 +10,7 @@ router.get('/search', async (req, res) => {
   const offset = (page - 1) * limit;
   if (!q) return res.json([]);
 
-  res.json(await userModel.searchUserId(q, limit, offset));
+  res.json(await userModel.searchUserFromIdName(q, limit, offset));
 });
 
 

@@ -59,6 +59,14 @@ export const removePostLike = (postId: string): Promise<string> => {
   });
 };
 
+export const addPostcomment = (postId: string): Promise<string> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = 'UPDATE posts SET comment_count = comment_count + 1 WHERE id = ?';
+    const [result] = await db.query<OkPacket>(sql, [postId]);
+    resolve(result.message);
+  });
+};
+
 export const getPostsOrderByTime = (limit: number, offset: number): Promise<Post[] | null> => {
   return new Promise(async (resolve, reject) => {
     const sql = `

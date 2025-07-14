@@ -96,6 +96,18 @@ router.post('/create', async (req, res, next) => {
         next(err);
     }
 });
+// fetch latest posts by any user
+router.get('/newest', async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 20;
+    const offset = (page - 1) * limit;
+    try {
+        res.json(await postsModel.getPostsOrderByTime(limit, offset));
+    }
+    catch (err) {
+        res.status(500).json({ message: 'Failed to fetch posts' });
+    }
+});
 router.get('/search', async (req, res) => {
     const q = (req.query.q || '').trim();
     const page = parseInt(req.query.page) || 1;
@@ -104,6 +116,19 @@ router.get('/search', async (req, res) => {
     if (!q)
         return res.json([]);
     res.json(await postsModel.searchPosts(q, limit, offset));
+});
+router.get('/user/:userId', async (req, res) => {
+    const { userId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+    if (!userId)
+        return res.json([]);
+    res.json(await postsModel.getUserPosts(userId, limit, offset));
+});
+router.get('/:postId', async (req, res) => {
+    const { postId } = req.params;
+    res.json(await postsModel.getPost(postId));
 });
 /**
  * DELETE /api/posts/:id
@@ -179,18 +204,6 @@ router.get('/:postId/isLiked', async (req, res) => {
         res.json({ isLiked: false, message: 'Login first' });
     }
 });
-// fetch latest posts by any user
-router.get('/newest', async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = 20;
-    const offset = (page - 1) * limit;
-    try {
-        res.json(await postsModel.getPostsOrderByTime(limit, offset));
-    }
-    catch (err) {
-        res.status(500).json({ message: 'Failed to fetch posts' });
-    }
-});
 router.get('/:postId/media', (req, res) => {
     const { postId } = req.params;
     const dirPath = path_1.default.join(app_root_path_1.default.path, 'public', 'uploads', 'posts', postId);
@@ -201,17 +214,25 @@ router.get('/:postId/media', (req, res) => {
     const fileUrls = files.map(file => `/uploads/posts/${postId}/${file}`);
     res.json({ urls: fileUrls }); // e.g., ["/uploads/abc123/image-1.jpg", ...]
 });
-router.get('/:postId', async (req, res) => {
+router.get('/:postId/comments', async (req, res) => {
     const { postId } = req.params;
-    res.json(await postsModel.getPost(postId));
-});
-router.get('/user/:userId', async (req, res) => {
-    const { userId } = req.params;
     const page = parseInt(req.query.page) || 1;
-    const limit = 10;
+    const limit = 20;
     const offset = (page - 1) * limit;
-    if (!userId)
-        return res.json([]);
-    res.json(await postsModel.getUserPosts(userId, limit, offset));
+    res.json(await commentsModel.getComments(postId, limit, offset));
+});
+router.post('/:postId/create-comment', async (req, res) => {
+    if (!req.session.userId)
+        return res.status(400).json({ message: 'User not login' });
+    const { postId } = req.params;
+    const { content } = req.body;
+    const commentId = (0, uuid_1.v4)();
+    try {
+        const result = await commentsModel.createComment(commentId, req.session.userId, postId, content);
+        res.json({ message: result });
+    }
+    catch (err) {
+        res.status(400).json(err);
+    }
 });
 exports.default = router;
