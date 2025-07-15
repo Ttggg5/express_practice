@@ -104,6 +104,14 @@ export const resetPassword = (userId: string, newPassword: string): Promise<void
   });
 }
 
+// fields = (ex: ['username = ?', 'bio = ?'])
+export const updateUser = (fields: string[], values: string[]): Promise<void> => {
+  return new Promise(async (resolve, reject) => {
+    await db.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, [values]);
+    resolve();
+  });
+}
+
 export const updateAvatar = (userId: string, avatar: Buffer): Promise<void> => {
   return new Promise(async (resolve, reject) => {
     await db.query('UPDATE users SET avatar = ? WHERE id = ?', [avatar, userId]);

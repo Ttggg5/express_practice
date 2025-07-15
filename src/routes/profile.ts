@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as userModel from '../models/usersModel';
 import multer from 'multer';
+import db from '../db';
 
 const router = Router();
 
@@ -19,19 +20,27 @@ const upload = multer({
   }
 });
 
-router.post('/avatar/upload/:id', upload.single('avatar'), async (req, res) => {
-  const userId = req.params.id;
-  const file = req.file;
+router.put('/edit', upload.single('avatar'), async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) return res.status(401).json({ message: 'Not logged in' });
 
-  if (!file) return res.status(400).json({ message: 'No file uploaded' });
+  const { username, bio } = req.body;
+  const avatarBuf = req.file?.buffer ?? null;
 
-  try {
-    await userModel.updateAvatar(userId, file.buffer);
-    res.json({ message: 'Avatar updated successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error uploading avatar' });
-  }
+  // build query dynamically
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  if (username !== undefined) { fields.push('username = ?'); values.push(username); }
+  if (bio !== undefined) { fields.push('bio = ?'); values.push(bio); }
+  if (avatarBuf) { fields.push('avatar = ?'); values.push(avatarBuf); }
+
+  if (fields.length === 0) return res.json({ message: 'Nothing to update' });
+
+  values.push(userId);
+  await db.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+
+  res.json({ success: true });
 });
 
 router.get('/avatar/:id', async (req, res) => {
@@ -69,6 +78,5 @@ router.get('/:id', async (req, res) => {
   }
   res.json(userSafe);
 });
-
 
 export default router;

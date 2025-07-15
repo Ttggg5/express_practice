@@ -84,7 +84,10 @@ router.get('/me', async (req: Request, res: Response) => {
     const user = await userModel.getUserById(req.session.userId);
     res.json({ 
       isLoggedIn: true,
-      userId: user?.id
+      userId: user?.id,
+      username: user?.username,
+      email: user?.email,
+      bio: user?.bio
     });
   }
   else {
