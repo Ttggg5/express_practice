@@ -38,6 +38,13 @@ export const getCommentById = (commentId: string): Promise<Comment | null> => {
   });
 };
 
+export const deleteComment = (commentId: string): Promise<string> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = 'DELETE FROM comments WHERE id = ?';
+    const [result] = await db.query<OkPacket>(sql, [commentId]);
+    resolve(result.message);
+  });
+};
 
 export const deleteAllComments = (postId: string): Promise<string> => {
   return new Promise(async (resolve, reject) => {

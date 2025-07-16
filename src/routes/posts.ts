@@ -7,6 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import appRoot from 'app-root-path'
+import db from '../db';
 
 const router = express.Router();
 
@@ -57,8 +58,15 @@ router.post('/create', async (req, res, next) => {
       if (!req.session.userId)
         return res.status(400).json({ message: 'Post create filed' });
 
-      // Save post info to DB (with basic sample logic)
       await postsModel.createPost(postId, req.session.userId, content);
+
+      await db.query(
+        `INSERT INTO notifications (user_id, actor_id, verb, post_id)
+        SELECT follower_id, ?, 'posted', ?
+        FROM follows
+        WHERE following_id = ?`,
+        [req.session.userId, postId, req.session.userId]
+      );
 
       res.json({ message: 'Post created', postId });
     });
@@ -173,7 +181,7 @@ router.post('/:postId/unlike', async (req, res) => {
 router.get('/:postId/isLiked', async (req, res) => {
   if (req.session.userId) {
     try {
-      res.json({ isLiked: await postLikesModel.isLikedPost(req.session.userId, req.params.postId)});
+      res.json({ isLiked: await postLikesModel.isLikedPost(req.session.userId, req.params.postId) });
     } catch (err) {
       res.status(500).json({ isLiked: false, message: 'Search failed' });
     }
@@ -202,13 +210,28 @@ router.get('/:postId/comments', async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
-  
+
   res.json(await commentsModel.getComments(postId, limit, offset));
+});
+
+router.delete('/comment/:commentId', async (req, res) => {
+  const commentId = req.params.commentId;
+  const userId = req.session.userId;
+
+  const comment = await commentsModel.getCommentById(commentId);
+  if (!comment) return res.status(404).json({ message: 'Comment not found' });
+  if (comment.user_id !== userId)
+    return res.status(403).json({ message: 'Not your comment' });
+
+  await commentsModel.deleteComment(commentId);
+  await postsModel.removePostcomment(comment.post_id);
+
+  res.json({ isSuccess: true });
 });
 
 router.post('/:postId/create-comment', async (req, res) => {
   if (!req.session.userId)
-      return res.status(400).json({ message: 'User not login' });
+    return res.status(400).json({ message: 'User not login' });
 
   const { postId } = req.params;
   const { content } = req.body;
@@ -218,8 +241,16 @@ router.post('/:postId/create-comment', async (req, res) => {
     await commentsModel.createComment(commentId, postId, req.session.userId, content);
     await postsModel.addPostcomment(postId);
 
+    await db.query(
+      `INSERT INTO notifications (user_id, actor_id, verb, post_id, comment_id)
+      SELECT follower_id, ?, 'commented', ?, ?
+      FROM follows
+      WHERE following_id = ?`,
+      [req.session.userId, postId, commentId, req.session.userId]
+    );
+
     res.json(await commentsModel.getCommentById(commentId));
-  } catch(err) {
+  } catch (err) {
     res.status(400).json(err);
   }
 });

@@ -6,6 +6,7 @@ import authRoute from './routes/auth';
 import profileRoute from './routes/profile';
 import postRoutes from './routes/posts';
 import userRoutes from './routes/user';
+import notificationsRoutes from './routes/notifications';
 import dotenv from 'dotenv';
 import path from 'path';
 import appRoot from 'app-root-path';
@@ -42,6 +43,7 @@ app.use('/api/auth', authRoute);
 app.use('/api/profile', profileRoute);
 app.use('/api/posts', postRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // Root test route
 app.get('/', (req: Request, res: Response) => {

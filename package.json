@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only --env-file=.env src/index.ts",
+    "dev": "concurrently \"npm:dev:web\"",
+    "dev:web": "ts-node-dev --respawn --transpile-only --env-file=.env src/index.ts",
     "build": "tsc",
-    "start": "node --env-file=.env dist/index.js"
+    "start": "concurrently \"npm:start:web\"",
+    "start:web": "node --env-file=.env dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -14,11 +16,13 @@
   "dependencies": {
     "app-root-path": "^3.1.0",
     "bcryptjs": "^3.0.2",
+    "bullmq": "^5.56.4",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "4.18",
     "express-session": "^1.18.1",
     "https-localhost": "^4.7.1",
+    "ioredis": "^5.6.1",
     "morgan": "^1.10.0",
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",

@@ -87,5 +87,4 @@ router.get('/:id/following', async (req, res) => {
   res.json(await followsModelModel.getFollowing(userId, limit, offset));
 });
 
-
 export default router;
