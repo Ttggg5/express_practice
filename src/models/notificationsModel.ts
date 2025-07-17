@@ -1,4 +1,7 @@
-export enum Action{
+import { OkPacket, RowDataPacket } from "mysql2/promise";
+import db from "../db";
+
+export enum UserAction{
   posted = 'posted',
   commented = 'commented'
 }
@@ -7,10 +10,54 @@ export interface Notification {
   id: number;
   user_id: string;
   actor_id: string;
-  verb: Action
+  verb: UserAction
   post_id: string;
   comment_id: string;
   is_read: boolean;
   created_at: Date;
+  actor_name: string;
 }
 
+export const sendNotifications = (actorId: string, postId: string, commentId: string | null, action: UserAction): Promise<string> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = `
+      INSERT INTO notifications (user_id, actor_id, verb, post_id, comment_id)
+      SELECT follower_id, ?, '${action}', ?, ?
+      FROM follows
+      WHERE following_id = ?
+    `;
+    const [result] = await db.query<OkPacket>(sql, [actorId, postId, commentId, actorId]);
+    resolve(result.message);
+  });
+};
+
+export const markRead = (notificationId: number): Promise<string> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = `UPDATE notifications SET is_read = TRUE WHERE id = ?`;
+    const [result] = await db.query<OkPacket>(sql, [notificationId]);
+    resolve(result.message);
+  });
+};
+
+export const markReadAll = (userId: string): Promise<string> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = `UPDATE notifications SET is_read = TRUE WHERE user_id = ?`;
+    const [result] = await db.query<OkPacket>(sql, [userId]);
+    resolve(result.message);
+  });
+};
+
+export const getNotifications = (userId: string, limit: number, offset: number): Promise<Notification[] | null> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = `
+      SELECT n.*, u.username AS actor_name
+      FROM notifications n
+      JOIN users u ON u.id = n.actor_id
+      WHERE n.user_id = ?
+      ORDER BY n.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    const [rows] = await db.query<RowDataPacket[]>(sql, [userId, limit, offset]);
+    resolve(rows as Notification[] || null);
+  });
+};

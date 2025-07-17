@@ -2,6 +2,7 @@ import express from 'express';
 import * as postsModel from '../models/postsModel';
 import * as postLikesModel from '../models/postLikesModel';
 import * as commentsModel from '../models/commentsModel';
+import * as notificationsModel from '../models/notificationsModel';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -60,13 +61,7 @@ router.post('/create', async (req, res, next) => {
 
       await postsModel.createPost(postId, req.session.userId, content);
 
-      await db.query(
-        `INSERT INTO notifications (user_id, actor_id, verb, post_id)
-        SELECT follower_id, ?, 'posted', ?
-        FROM follows
-        WHERE following_id = ?`,
-        [req.session.userId, postId, req.session.userId]
-      );
+      await notificationsModel.sendNotifications(req.session.userId, postId, null, notificationsModel.UserAction.posted);
 
       res.json({ message: 'Post created', postId });
     });
@@ -214,6 +209,11 @@ router.get('/:postId/comments', async (req, res) => {
   res.json(await commentsModel.getComments(postId, limit, offset));
 });
 
+router.get('/comment/:commentId', async (req, res) => {
+  const commentId = req.params.commentId;
+  res.json(await commentsModel.getCommentById(commentId));
+});
+
 router.delete('/comment/:commentId', async (req, res) => {
   const commentId = req.params.commentId;
   const userId = req.session.userId;
@@ -241,13 +241,7 @@ router.post('/:postId/create-comment', async (req, res) => {
     await commentsModel.createComment(commentId, postId, req.session.userId, content);
     await postsModel.addPostcomment(postId);
 
-    await db.query(
-      `INSERT INTO notifications (user_id, actor_id, verb, post_id, comment_id)
-      SELECT follower_id, ?, 'commented', ?, ?
-      FROM follows
-      WHERE following_id = ?`,
-      [req.session.userId, postId, commentId, req.session.userId]
-    );
+    await notificationsModel.sendNotifications(req.session.userId, postId, commentId, notificationsModel.UserAction.commented);
 
     res.json(await commentsModel.getCommentById(commentId));
   } catch (err) {
