@@ -10,7 +10,7 @@ export interface Notification {
   id: number;
   user_id: string;
   actor_id: string;
-  verb: UserAction
+  verb: UserAction;
   post_id: string;
   comment_id: string;
   is_read: boolean;
@@ -18,13 +18,14 @@ export interface Notification {
   actor_name: string;
 }
 
+// return the id that have been inserted
 export const sendNotifications = (actorId: string, postId: string, commentId: string | null, action: UserAction): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     const sql = `
       INSERT INTO notifications (user_id, actor_id, verb, post_id, comment_id)
       SELECT follower_id, ?, '${action}', ?, ?
       FROM follows
-      WHERE following_id = ?
+      WHERE following_id = ?;
     `;
     const [result] = await db.query<OkPacket>(sql, [actorId, postId, commentId, actorId]);
     resolve(result.message);
@@ -58,6 +59,14 @@ export const getNotifications = (userId: string, limit: number, offset: number):
       LIMIT ? OFFSET ?
     `;
     const [rows] = await db.query<RowDataPacket[]>(sql, [userId, limit, offset]);
+    resolve(rows as Notification[] || null);
+  });
+};
+
+export const getNotificationsByIds = (id: number[]): Promise<Notification[] | null> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = `SELECT * FROM notifications WHERE id in (?)`;
+    const [rows] = await db.query<RowDataPacket[]>(sql, [id]);
     resolve(rows as Notification[] || null);
   });
 };

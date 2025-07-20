@@ -3,17 +3,16 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"npm:dev:web\"",
-    "dev:web": "ts-node-dev --respawn --transpile-only --env-file=.env src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only --env-file=.env src/index.ts",
     "build": "tsc",
-    "start": "concurrently \"npm:start:web\"",
-    "start:web": "node --env-file=.env dist/index.js"
+    "start": "node --env-file=.env dist/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@types/ws": "^8.18.1",
     "app-root-path": "^3.1.0",
     "bcryptjs": "^3.0.2",
     "bullmq": "^5.56.4",
@@ -27,7 +26,9 @@
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",
     "nodemailer": "^7.0.3",
-    "uuidv4": "^6.2.13"
+    "socket.io": "^4.8.1",
+    "uuidv4": "^6.2.13",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -38,6 +39,7 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^22.15.19",
     "@types/nodemailer": "^6.4.17",
+    "@types/socket.io": "^3.0.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   }

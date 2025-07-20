@@ -3,12 +3,12 @@ import * as postsModel from '../models/postsModel';
 import * as postLikesModel from '../models/postLikesModel';
 import * as commentsModel from '../models/commentsModel';
 import * as notificationsModel from '../models/notificationsModel';
+import * as followsModel from '../models/followsModel';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import appRoot from 'app-root-path'
-import db from '../db';
+import appRoot from 'app-root-path';
 
 const router = express.Router();
 

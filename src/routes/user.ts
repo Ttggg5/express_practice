@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import * as followsModelModel from '../models/followsModel';
+import * as followsModel from '../models/followsModel';
 import * as userModel from '../models/usersModel'
 const router = Router();
 
@@ -24,7 +24,7 @@ router.post('/follow', async (req, res) => {
     return res.status(400).json({ message: 'Invalid follow request' });
 
   try {
-    await followsModelModel.follow(followerId, followingId);
+    await followsModel.follow(followerId, followingId);
     res.json({ isSuccess: true });
   } catch (err) {
     console.error(err);
@@ -39,7 +39,7 @@ router.post('/unfollow', async (req, res) => {
   const { followingId } = req.body;
 
   try {
-    await followsModelModel.unfollow(followerId, followingId);
+    await followsModel.unfollow(followerId, followingId);
     res.json({ isSuccess: true });
   } catch (err) {
     console.error(err);
@@ -51,7 +51,7 @@ router.post('/following-status', async (req, res) => {
   const { followerId, followingId } = req.body;
 
   if (!followerId || !followingId) return res.json({ isFollowing: false });
-  const rows = await followsModelModel.followingStatus(followerId, followingId);
+  const rows = await followsModel.followingStatus(followerId, followingId);
 
   res.json({ isFollowing: rows.length > 0 });
 });
@@ -61,8 +61,8 @@ router.get('/:id/follow-count', async (req, res) => {
   const userId = decodeURIComponent(req.params.id);
 
   try {
-    const followerCount = await followsModelModel.followerCount(userId);
-    const followingCount = await followsModelModel.followingCount(userId);
+    const followerCount = await followsModel.followerCount(userId);
+    const followingCount = await followsModel.followingCount(userId);
 
     res.json({ followerCount: followerCount, followingCount: followingCount });
   } catch (err) {
@@ -74,17 +74,17 @@ router.get('/:id/follow-count', async (req, res) => {
 router.get('/:id/followers', async (req, res) => {
   const userId = decodeURIComponent(req.params.id);
   const page = parseInt(req.query.page as string) || 1;
-  const limit = 10;
+  const limit = parseInt(req.query.limit as string) || 10;
   const offset = (page - 1) * limit;
-  res.json(await followsModelModel.getFollowers(userId, limit, offset));
+  res.json(await followsModel.getFollowers(userId, limit, offset));
 });
 
 router.get('/:id/following', async (req, res) => {
   const userId = decodeURIComponent(req.params.id);
   const page = parseInt(req.query.page as string) || 1;
-  const limit = 10;
+  const limit = parseInt(req.query.limit as string) || 10;
   const offset = (page - 1) * limit;
-  res.json(await followsModelModel.getFollowing(userId, limit, offset));
+  res.json(await followsModel.getFollowing(userId, limit, offset));
 });
 
 export default router;
