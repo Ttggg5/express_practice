@@ -52,17 +52,29 @@ export const followingCount = (userId: string): Promise<number> => {
   });
 };
 
+// limit = 0 means get all data
 export const getFollowers = (userId: string, limit: number, offset: number): Promise<{ id: string, username: string}[]> => {
   return new Promise(async (resolve, reject) => {
-    const sql = 'SELECT users.id, users.username FROM follows JOIN users ON users.id = follows.follower_id WHERE following_id = ? limit ? offset ?';
+    const limitOffset = limit === 0 ? '' : `limit ${limit} offset ${offset}`;
+    const sql = `
+      SELECT users.id, users.username
+      FROM follows JOIN users ON users.id = follows.follower_id
+      WHERE following_id = ? ${limitOffset}
+    `;
     const [rows] = await db.query<RowDataPacket[]>(sql, [userId, limit, offset]);
     resolve(rows as { id: string, username: string}[]);
   });
 };
 
+// limit = 0 means get all data
 export const getFollowing = (userId: string, limit: number, offset: number): Promise<{ id: string, username: string}[]> => {
   return new Promise(async (resolve, reject) => {
-    const sql = 'SELECT users.id, users.username FROM follows JOIN users ON users.id = follows.following_id WHERE follower_id = ? limit ? offset ?';
+    const limitOffset = limit === 0 ? '' : `limit ${limit} offset ${offset}`;
+    const sql = `
+      SELECT users.id, users.username
+      FROM follows JOIN users ON users.id = follows.following_id
+      WHERE follower_id = ? ${limitOffset}
+    `;
     const [rows] = await db.query<RowDataPacket[]>(sql, [userId, limit, offset]);
     resolve(rows as { id: string, username: string}[]);
   });

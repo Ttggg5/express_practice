@@ -7,7 +7,7 @@ export enum UserAction{
 }
 
 export interface Notification {
-  id: number;
+  id: string;
   user_id: string;
   actor_id: string;
   verb: UserAction;
@@ -19,15 +19,15 @@ export interface Notification {
 }
 
 // return the id that have been inserted
-export const sendNotifications = (actorId: string, postId: string, commentId: string | null, action: UserAction): Promise<string> => {
+export const sendNotifications = (id: string, actorId: string, postId: string, commentId: string | null, action: UserAction): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     const sql = `
-      INSERT INTO notifications (user_id, actor_id, verb, post_id, comment_id)
-      SELECT follower_id, ?, '${action}', ?, ?
+      INSERT INTO notifications (id, user_id, actor_id, verb, post_id, comment_id)
+      SELECT ?, follower_id, ?, '${action}', ?, ?
       FROM follows
       WHERE following_id = ?;
     `;
-    const [result] = await db.query<OkPacket>(sql, [actorId, postId, commentId, actorId]);
+    const [result] = await db.query<OkPacket>(sql, [id, actorId, postId, commentId, actorId]);
     resolve(result.message);
   });
 };

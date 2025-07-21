@@ -40,6 +40,7 @@ const express_1 = __importDefault(require("express"));
 const postsModel = __importStar(require("../models/postsModel"));
 const postLikesModel = __importStar(require("../models/postLikesModel"));
 const commentsModel = __importStar(require("../models/commentsModel"));
+const notificationsModel = __importStar(require("../models/notificationsModel"));
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
@@ -63,9 +64,9 @@ const storage = multer_1.default.diskStorage({
 });
 const upload = (0, multer_1.default)({
     storage,
-    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+    limits: { fileSize: 300 * 1024 * 1024 }, // 300MB
     fileFilter: (req, file, cb) => {
-        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'];
+        const allowed = ['image/jpg', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4'];
         if (allowed.includes(file.mimetype))
             cb(null, true);
         else
@@ -81,14 +82,14 @@ router.post('/create', async (req, res, next) => {
         upload.array('files')(req, res, async function (err) {
             if (err) {
                 const dir = path_1.default.join(app_root_path_1.default.path, 'public', 'uploads', 'posts', postId);
-                fs_1.default.rmdirSync(dir);
+                fs_1.default.mkdirSync(dir);
                 return res.status(400).json({ message: err.message });
             }
             const { content } = req.body;
             if (!req.session.userId)
                 return res.status(400).json({ message: 'Post create filed' });
-            // Save post info to DB (with basic sample logic)
             await postsModel.createPost(postId, req.session.userId, content);
+            await notificationsModel.sendNotifications(req.session.userId, postId, null, notificationsModel.UserAction.posted);
             res.json({ message: 'Post created', postId });
         });
     }
@@ -221,6 +222,22 @@ router.get('/:postId/comments', async (req, res) => {
     const offset = (page - 1) * limit;
     res.json(await commentsModel.getComments(postId, limit, offset));
 });
+router.get('/comment/:commentId', async (req, res) => {
+    const commentId = req.params.commentId;
+    res.json(await commentsModel.getCommentById(commentId));
+});
+router.delete('/comment/:commentId', async (req, res) => {
+    const commentId = req.params.commentId;
+    const userId = req.session.userId;
+    const comment = await commentsModel.getCommentById(commentId);
+    if (!comment)
+        return res.status(404).json({ message: 'Comment not found' });
+    if (comment.user_id !== userId)
+        return res.status(403).json({ message: 'Not your comment' });
+    await commentsModel.deleteComment(commentId);
+    await postsModel.removePostcomment(comment.post_id);
+    res.json({ isSuccess: true });
+});
 router.post('/:postId/create-comment', async (req, res) => {
     if (!req.session.userId)
         return res.status(400).json({ message: 'User not login' });
@@ -228,8 +245,10 @@ router.post('/:postId/create-comment', async (req, res) => {
     const { content } = req.body;
     const commentId = (0, uuid_1.v4)();
     try {
-        const result = await commentsModel.createComment(commentId, req.session.userId, postId, content);
-        res.json({ message: result });
+        await commentsModel.createComment(commentId, postId, req.session.userId, content);
+        await postsModel.addPostcomment(postId);
+        await notificationsModel.sendNotifications(req.session.userId, postId, commentId, notificationsModel.UserAction.commented);
+        res.json(await commentsModel.getCommentById(commentId));
     }
     catch (err) {
         res.status(400).json(err);

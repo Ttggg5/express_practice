@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserPosts = exports.searchPosts = exports.getPostsOrderByTime = exports.removePostLike = exports.addPostLike = exports.deletePost = exports.getPost = exports.createPost = void 0;
+exports.getUserPosts = exports.searchPosts = exports.getPostsOrderByTime = exports.removePostcomment = exports.addPostcomment = exports.removePostLike = exports.addPostLike = exports.deletePost = exports.getPost = exports.createPost = void 0;
 const db_1 = __importDefault(require("../db"));
 const createPost = (postId, userId, content) => {
     return new Promise(async (resolve, reject) => {
@@ -50,6 +50,22 @@ const removePostLike = (postId) => {
     });
 };
 exports.removePostLike = removePostLike;
+const addPostcomment = (postId) => {
+    return new Promise(async (resolve, reject) => {
+        const sql = 'UPDATE posts SET comment_count = comment_count + 1 WHERE id = ?';
+        const [result] = await db_1.default.query(sql, [postId]);
+        resolve(result.message);
+    });
+};
+exports.addPostcomment = addPostcomment;
+const removePostcomment = (postId) => {
+    return new Promise(async (resolve, reject) => {
+        const sql = 'UPDATE posts SET comment_count = comment_count - 1 WHERE id = ?';
+        const [result] = await db_1.default.query(sql, [postId]);
+        resolve(result.message);
+    });
+};
+exports.removePostcomment = removePostcomment;
 const getPostsOrderByTime = (limit, offset) => {
     return new Promise(async (resolve, reject) => {
         const sql = `

@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const userModel = __importStar(require("../models/usersModel"));
 const multer_1 = __importDefault(require("multer"));
+const db_1 = __importDefault(require("../db"));
 const router = (0, express_1.Router)();
 // Multer config — store file in memory as Buffer
 const storage = multer_1.default.memoryStorage();
@@ -55,19 +56,32 @@ const upload = (0, multer_1.default)({
         }
     }
 });
-router.post('/avatar/upload/:id', upload.single('avatar'), async (req, res) => {
-    const userId = req.params.id;
-    const file = req.file;
-    if (!file)
-        return res.status(400).json({ message: 'No file uploaded' });
-    try {
-        await userModel.updateAvatar(userId, file.buffer);
-        res.json({ message: 'Avatar updated successfully' });
+router.put('/edit', upload.single('avatar'), async (req, res) => {
+    const userId = req.session.userId;
+    if (!userId)
+        return res.status(401).json({ message: 'Not logged in' });
+    const { username, bio } = req.body;
+    const avatarBuf = req.file?.buffer ?? null;
+    // build query dynamically
+    const fields = [];
+    const values = [];
+    if (username !== undefined) {
+        fields.push('username = ?');
+        values.push(username);
     }
-    catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Error uploading avatar' });
+    if (bio !== undefined) {
+        fields.push('bio = ?');
+        values.push(bio);
     }
+    if (avatarBuf) {
+        fields.push('avatar = ?');
+        values.push(avatarBuf);
+    }
+    if (fields.length === 0)
+        return res.json({ message: 'Nothing to update' });
+    values.push(userId);
+    await db_1.default.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+    res.json({ success: true });
 });
 router.get('/avatar/:id', async (req, res) => {
     const userId = decodeURIComponent(req.params.id);

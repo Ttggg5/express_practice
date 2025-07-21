@@ -9,6 +9,7 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import appRoot from 'app-root-path';
+import { NotificationQueue } from '../notificationQueue';
 
 const router = express.Router();
 
@@ -32,9 +33,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+  limits: { fileSize: 300 * 1024 * 1024 }, // 300MB
   fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'];
+    const allowed = ['image/jpg', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4'];
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error('Unsupported file type'));
   }
@@ -51,7 +52,7 @@ router.post('/create', async (req, res, next) => {
     upload.array('files')(req, res, async function (err) {
       if (err) {
         const dir = path.join(appRoot.path, 'public', 'uploads', 'posts', postId);
-        fs.rmdirSync(dir);
+        fs.mkdirSync(dir);
         return res.status(400).json({ message: err.message });
       }
 
@@ -61,7 +62,16 @@ router.post('/create', async (req, res, next) => {
 
       await postsModel.createPost(postId, req.session.userId, content);
 
-      await notificationsModel.sendNotifications(req.session.userId, postId, null, notificationsModel.UserAction.posted);
+      const notificationId = `noti-${uuidv4()}`;
+      await notificationsModel.sendNotifications(notificationId, req.session.userId, postId, null, notificationsModel.UserAction.posted);
+      (await followsModel.getFollowers(req.session.userId, 0, 0)).forEach((u) => {
+        NotificationQueue.enqueue({
+          id: notificationId,
+          user_id: u.id,
+          actor_id: req.session.userId || '',
+          verb: notificationsModel.UserAction.posted
+        } as notificationsModel.Notification);
+      });
 
       res.json({ message: 'Post created', postId });
     });
@@ -241,7 +251,16 @@ router.post('/:postId/create-comment', async (req, res) => {
     await commentsModel.createComment(commentId, postId, req.session.userId, content);
     await postsModel.addPostcomment(postId);
 
-    await notificationsModel.sendNotifications(req.session.userId, postId, commentId, notificationsModel.UserAction.commented);
+    const notificationId = `noti-${uuidv4()}`;
+    await notificationsModel.sendNotifications(notificationId, req.session.userId, postId, commentId, notificationsModel.UserAction.commented);
+    (await followsModel.getFollowers(req.session.userId, 0, 0)).forEach((u) => {
+      NotificationQueue.enqueue({
+        id: notificationId,
+        user_id: u.id,
+        actor_id: req.session.userId || '',
+        verb: notificationsModel.UserAction.commented
+      } as notificationsModel.Notification)
+    });
 
     res.json(await commentsModel.getCommentById(commentId));
   } catch (err) {

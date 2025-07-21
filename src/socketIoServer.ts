@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import * as chatModel from './models/messageModel'
 import { v4 as uuidv4 } from 'uuid';
 import * as chatWithModel from './models/chatWithModel';
+import { NotificationQueue } from './notificationQueue';
 
 export class SocketIoServer {
   // Store active users: { userId: socket.id }
@@ -17,17 +18,17 @@ export class SocketIoServer {
     });
   }
 
-  startChatServer() {
+  startServer() {
     this.io.on('connection', (socket) => {
-      console.log('⭕ User connected:', socket.id);
-    
       // Register user
       socket.on('register', (userId) => {
         this.onlineUsers[userId] = socket.id;
+        console.log(`⭕ User connected: ${userId}[${socket.id}]`);
       });
     
+      // ---------------------------------For Chat----------------------------------
       // Receive and forward message
-      socket.on('send message', async(msg) => {
+      socket.on('send-message', async(msg) => {
         const { id, from_user_id, to_user_id, content, created_at } = msg;
     
         // save to MySQL
@@ -40,7 +41,7 @@ export class SocketIoServer {
         // Send to target user if online
         const targetSocketId = this.onlineUsers[to_user_id];
         if (targetSocketId) {
-          this.io.to(targetSocketId).emit('receive message', {
+          this.io.to(targetSocketId).emit('receive-message', {
             messageId, from_user_id, to_user_id, content, created_at
           });
         }
@@ -56,8 +57,16 @@ export class SocketIoServer {
         }
         console.log('❌ User disconnected:', socket.id);
       });
+      // ---------------------------------------------------------------------------
+
+      setInterval(() => {
+        while (NotificationQueue.queue.length > 0) {
+          const noti = NotificationQueue.dequeue();
+          this.io.to(this.onlineUsers[noti?.user_id as string]).emit('notification', noti);
+        }
+      }, 5000);
     });
 
-    console.log('💬 Chat server on!!');
+    console.log('Socket server on!!');
   }
 }

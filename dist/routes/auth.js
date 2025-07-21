@@ -111,7 +111,10 @@ router.get('/me', async (req, res) => {
         const user = await userModel.getUserById(req.session.userId);
         res.json({
             isLoggedIn: true,
-            userId: user?.id
+            userId: user?.id,
+            username: user?.username,
+            email: user?.email,
+            bio: user?.bio
         });
     }
     else {
@@ -125,7 +128,7 @@ router.post('/forgot-password', async (req, res) => {
     if (!user)
         return res.status(200).json({ message: 'Email not regist' });
     const token = (0, crypto_1.randomBytes)(64).toString('hex');
-    const expires = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes
+    const expires = new Date(Date.now() + 1000 * 60 * 5); // 5 minutes
     await userModel.setResetToken(user.id, token, expires);
     await (0, mail_1.sendResetEmail)(email, token);
     res.json({ message: 'Reset link sent' });

@@ -103,7 +103,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
   if (!user) return res.status(200).json({ message: 'Email not regist' });
 
   const token = randomBytes(64).toString('hex');
-  const expires = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes
+  const expires = new Date(Date.now() + 1000 * 60 * 5); // 5 minutes
 
   await userModel.setResetToken(user.id, token, expires);
 

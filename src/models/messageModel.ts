@@ -17,15 +17,16 @@ export const insertMessage = (id: string, fromUserId: string, toUserId: string, 
   });
 };
 
-export const getHistoryMessages = (fromUserId: string, toUserId: string): Promise<Message[]> => {
+export const getHistoryMessages = (fromUserId: string, toUserId: string, limit: number, offset: number): Promise<Message[]> => {
   return new Promise(async (resolve, reject) => {
     const sql = `
       SELECT * FROM messages
       WHERE (from_user_id = ? AND to_user_id = ?)
       OR (from_user_id = ? AND to_user_id = ?)
-      ORDER BY created_at
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
     `;
-    const [rows] = await db.query<RowDataPacket[]>(sql, [fromUserId, toUserId, toUserId, fromUserId]);
+    const [rows] = await db.query<RowDataPacket[]>(sql, [fromUserId, toUserId, toUserId, fromUserId, limit, offset]);
     resolve(rows as Message[] || null);
   });
 };

@@ -28,7 +28,7 @@ const sendResetEmail = async (to, token) => {
         from: 'Your App <no-reply@yourapp.com>',
         to,
         subject: 'Reset Your Password',
-        html: `<p>Click to reset password: <a href="${resetLink}">${resetLink}</a></p><br><br><p>This link will only work in 15 minutes.</p>`
+        html: `<p>Click to reset password: <a href="${resetLink}">${resetLink}</a></p><br><br><p>This link will only work in 5 minutes.</p>`
     });
 };
 exports.sendResetEmail = sendResetEmail;

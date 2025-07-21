@@ -13,7 +13,7 @@ import path from 'path';
 import appRoot from 'app-root-path';
 import os from 'os';
 import { createServer } from 'http';
-import { SocketIoServer } from './chatSocket';
+import { SocketIoServer } from './socketIoServer';
 
 
 dotenv.config({path: path.join(appRoot.path, '.env')});
@@ -23,7 +23,7 @@ const PORT = process.env.BACKEND_PORT || 8000;
 
 const httpServer = createServer(app);
 const socketIoServer = new SocketIoServer(httpServer);
-socketIoServer.startChatServer();
+socketIoServer.startServer();
 
 // Middleware
 app.use(cors({
