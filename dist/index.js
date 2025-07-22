@@ -18,13 +18,13 @@ const path_1 = __importDefault(require("path"));
 const app_root_path_1 = __importDefault(require("app-root-path"));
 const os_1 = __importDefault(require("os"));
 const http_1 = require("http");
-const chatSocket_1 = require("./chatSocket");
+const socketIoServer_1 = require("./socketIoServer");
 dotenv_1.default.config({ path: path_1.default.join(app_root_path_1.default.path, '.env') });
 const app = (0, express_1.default)();
 const PORT = process.env.BACKEND_PORT || 8000;
 const httpServer = (0, http_1.createServer)(app);
-const socketIoServer = new chatSocket_1.SocketIoServer(httpServer);
-socketIoServer.startChatServer();
+const socketIoServer = new socketIoServer_1.SocketIoServer(httpServer);
+socketIoServer.startServer();
 // Middleware
 app.use((0, cors_1.default)({
     origin: true, // frontend URL

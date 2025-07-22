@@ -32,7 +32,7 @@ export const sendNotifications = (id: string, actorId: string, postId: string, c
   });
 };
 
-export const markRead = (notificationId: number): Promise<string> => {
+export const markRead = (notificationId: string): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     const sql = `UPDATE notifications SET is_read = TRUE WHERE id = ?`;
     const [result] = await db.query<OkPacket>(sql, [notificationId]);
@@ -68,5 +68,13 @@ export const getNotificationsByIds = (id: number[]): Promise<Notification[] | nu
     const sql = `SELECT * FROM notifications WHERE id in (?)`;
     const [rows] = await db.query<RowDataPacket[]>(sql, [id]);
     resolve(rows as Notification[] || null);
+  });
+};
+
+export const getUnreadCount = (userId: string): Promise<number> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = `SELECT COUNT(is_read) as count FROM notifications WHERE user_id = ? and is_read = FALSE`;
+    const [rows] = await db.query<RowDataPacket[]>(sql, [userId]);
+    resolve(Number(rows[0].count));
   });
 };

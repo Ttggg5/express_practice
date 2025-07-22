@@ -31,4 +31,13 @@ router.put('/mark-read-all', async (req, res) => {
   res.json({ isSuccess: true });
 });
 
+// GET /api/notifications/unread-count
+// return { count: number }
+router.get('/unread-count', async (req, res) => {
+  if (!req.session.userId) return res.status(400).json({ message: 'Login first' });
+
+  const count = await notificationsModel.getUnreadCount(req.session.userId);
+  res.json({ count: count });
+});
+
 export default router;

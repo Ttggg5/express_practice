@@ -31,12 +31,13 @@ export class SocketIoServer {
       socket.on('send-message', async(msg) => {
         const { id, from_user_id, to_user_id, content, created_at } = msg;
     
-        // save to MySQL
+        // Save to database
         const messageId = uuidv4();
         chatModel.insertMessage(messageId, from_user_id, to_user_id, content);
         if (!await chatWithModel.isExists(from_user_id, to_user_id))
           await chatWithModel.insert(from_user_id, to_user_id);
         await chatWithModel.updateLastChat(from_user_id, to_user_id);
+        await chatWithModel.updateRead(to_user_id, from_user_id, false);
     
         // Send to target user if online
         const targetSocketId = this.onlineUsers[to_user_id];
@@ -44,6 +45,8 @@ export class SocketIoServer {
           this.io.to(targetSocketId).emit('receive-message', {
             messageId, from_user_id, to_user_id, content, created_at
           });
+
+          this.io.to(targetSocketId).emit('message-noti', { from_user_id });
         }
       });
     
@@ -52,13 +55,14 @@ export class SocketIoServer {
         for (const userId in this.onlineUsers) {
           if (this.onlineUsers[userId] === socket.id) {
             delete this.onlineUsers[userId];
+            console.log(`❌ User disconnected: ${userId}[${socket.id}]`);
             break;
           }
         }
-        console.log('❌ User disconnected:', socket.id);
       });
       // ---------------------------------------------------------------------------
 
+      // ------------------------------For Notification-----------------------------
       setInterval(() => {
         while (NotificationQueue.queue.length > 0) {
           const noti = NotificationQueue.dequeue();
@@ -66,6 +70,7 @@ export class SocketIoServer {
         }
       }, 5000);
     });
+    // -----------------------------------------------------------------------------
 
     console.log('Socket server on!!');
   }

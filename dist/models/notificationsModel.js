@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getNotificationsByIds = exports.getNotifications = exports.markReadAll = exports.markRead = exports.sendNotifications = exports.UserAction = void 0;
+exports.getUnreadCount = exports.getNotificationsByIds = exports.getNotifications = exports.markReadAll = exports.markRead = exports.sendNotifications = exports.UserAction = void 0;
 const db_1 = __importDefault(require("../db"));
 var UserAction;
 (function (UserAction) {
@@ -11,15 +11,15 @@ var UserAction;
     UserAction["commented"] = "commented";
 })(UserAction || (exports.UserAction = UserAction = {}));
 // return the id that have been inserted
-const sendNotifications = (actorId, postId, commentId, action) => {
+const sendNotifications = (id, actorId, postId, commentId, action) => {
     return new Promise(async (resolve, reject) => {
         const sql = `
-      INSERT INTO notifications (user_id, actor_id, verb, post_id, comment_id)
-      SELECT follower_id, ?, '${action}', ?, ?
+      INSERT INTO notifications (id, user_id, actor_id, verb, post_id, comment_id)
+      SELECT ?, follower_id, ?, '${action}', ?, ?
       FROM follows
       WHERE following_id = ?;
     `;
-        const [result] = await db_1.default.query(sql, [actorId, postId, commentId, actorId]);
+        const [result] = await db_1.default.query(sql, [id, actorId, postId, commentId, actorId]);
         resolve(result.message);
     });
 };
@@ -63,3 +63,11 @@ const getNotificationsByIds = (id) => {
     });
 };
 exports.getNotificationsByIds = getNotificationsByIds;
+const getUnreadCount = (userId) => {
+    return new Promise(async (resolve, reject) => {
+        const sql = `SELECT COUNT(is_read) as count FROM notifications WHERE user_id = ? and is_read = FALSE`;
+        const [rows] = await db_1.default.query(sql, [userId]);
+        resolve(Number(rows[0].count));
+    });
+};
+exports.getUnreadCount = getUnreadCount;

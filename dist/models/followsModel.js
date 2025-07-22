@@ -45,17 +45,29 @@ const followingCount = (userId) => {
     });
 };
 exports.followingCount = followingCount;
+// limit = 0 means get all data
 const getFollowers = (userId, limit, offset) => {
     return new Promise(async (resolve, reject) => {
-        const sql = 'SELECT users.id, users.username FROM follows JOIN users ON users.id = follows.follower_id WHERE following_id = ? limit ? offset ?';
+        const limitOffset = limit === 0 ? '' : `limit ${limit} offset ${offset}`;
+        const sql = `
+      SELECT users.id, users.username
+      FROM follows JOIN users ON users.id = follows.follower_id
+      WHERE following_id = ? ${limitOffset}
+    `;
         const [rows] = await db_1.default.query(sql, [userId, limit, offset]);
         resolve(rows);
     });
 };
 exports.getFollowers = getFollowers;
+// limit = 0 means get all data
 const getFollowing = (userId, limit, offset) => {
     return new Promise(async (resolve, reject) => {
-        const sql = 'SELECT users.id, users.username FROM follows JOIN users ON users.id = follows.following_id WHERE follower_id = ? limit ? offset ?';
+        const limitOffset = limit === 0 ? '' : `limit ${limit} offset ${offset}`;
+        const sql = `
+      SELECT users.id, users.username
+      FROM follows JOIN users ON users.id = follows.following_id
+      WHERE follower_id = ? ${limitOffset}
+    `;
         const [rows] = await db_1.default.query(sql, [userId, limit, offset]);
         resolve(rows);
     });

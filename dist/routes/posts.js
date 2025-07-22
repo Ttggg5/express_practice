@@ -41,11 +41,13 @@ const postsModel = __importStar(require("../models/postsModel"));
 const postLikesModel = __importStar(require("../models/postLikesModel"));
 const commentsModel = __importStar(require("../models/commentsModel"));
 const notificationsModel = __importStar(require("../models/notificationsModel"));
+const followsModel = __importStar(require("../models/followsModel"));
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const uuid_1 = require("uuid");
 const app_root_path_1 = __importDefault(require("app-root-path"));
+const notificationQueue_1 = require("../notificationQueue");
 const router = express_1.default.Router();
 const storage = multer_1.default.diskStorage({
     destination: function (req, file, cb) {
@@ -89,7 +91,16 @@ router.post('/create', async (req, res, next) => {
             if (!req.session.userId)
                 return res.status(400).json({ message: 'Post create filed' });
             await postsModel.createPost(postId, req.session.userId, content);
-            await notificationsModel.sendNotifications(req.session.userId, postId, null, notificationsModel.UserAction.posted);
+            const notificationId = `noti-${(0, uuid_1.v4)()}`;
+            await notificationsModel.sendNotifications(notificationId, req.session.userId, postId, null, notificationsModel.UserAction.posted);
+            (await followsModel.getFollowers(req.session.userId, 0, 0)).forEach((u) => {
+                notificationQueue_1.NotificationQueue.enqueue({
+                    id: notificationId,
+                    user_id: u.id,
+                    actor_id: req.session.userId || '',
+                    verb: notificationsModel.UserAction.posted
+                });
+            });
             res.json({ message: 'Post created', postId });
         });
     }
@@ -247,7 +258,16 @@ router.post('/:postId/create-comment', async (req, res) => {
     try {
         await commentsModel.createComment(commentId, postId, req.session.userId, content);
         await postsModel.addPostcomment(postId);
-        await notificationsModel.sendNotifications(req.session.userId, postId, commentId, notificationsModel.UserAction.commented);
+        const notificationId = `noti-${(0, uuid_1.v4)()}`;
+        await notificationsModel.sendNotifications(notificationId, req.session.userId, postId, commentId, notificationsModel.UserAction.commented);
+        (await followsModel.getFollowers(req.session.userId, 0, 0)).forEach((u) => {
+            notificationQueue_1.NotificationQueue.enqueue({
+                id: notificationId,
+                user_id: u.id,
+                actor_id: req.session.userId || '',
+                verb: notificationsModel.UserAction.commented
+            });
+        });
         res.json(await commentsModel.getCommentById(commentId));
     }
     catch (err) {

@@ -46,13 +46,7 @@ router.get('/used-chat-with', async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     try {
-        const rows = await chatWithModel.getUsedChatWith(userId, limit, offset);
-        res.json(rows.map((item) => {
-            if (item.from_user_id === userId)
-                return { id: item.to_user_id, username: item.target_username };
-            else
-                return { id: item.from_user_id, username: item.target_username };
-        }));
+        res.json(await chatWithModel.getUsedChatWith(userId, limit, offset));
     }
     catch (err) {
         console.error(err);
@@ -73,6 +67,20 @@ router.get('/history/:userId', async (req, res) => {
     catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to load messages' });
+    }
+});
+// GET /api/chat/read
+router.put('/read', async (req, res) => {
+    if (!req.session.userId)
+        return res.status(400).json({ message: 'Login first' });
+    const fromUserId = req.session.userId;
+    const toUserId = req.query.targetUserId;
+    try {
+        res.json(await chatWithModel.updateRead(fromUserId, toUserId, true));
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to read' });
     }
 });
 exports.default = router;
