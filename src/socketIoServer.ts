@@ -37,7 +37,7 @@ export class SocketIoServer {
         if (!await chatWithModel.isExists(from_user_id, to_user_id))
           await chatWithModel.insert(from_user_id, to_user_id);
         await chatWithModel.updateLastChat(from_user_id, to_user_id);
-        await chatWithModel.updateRead(to_user_id, from_user_id, false);
+        await chatWithModel.updateRead(from_user_id, to_user_id, false);
     
         // Send to target user if online
         const targetSocketId = this.onlineUsers[to_user_id];

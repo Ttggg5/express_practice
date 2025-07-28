@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now();
     const ext = path.extname(file.originalname);
     cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
   }
@@ -35,7 +35,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 300 * 1024 * 1024 }, // 300MB
   fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpg', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4'];
+    const allowed = ['image/jpg', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error('Unsupported file type'));
   }
@@ -149,6 +149,57 @@ router.delete('/:postId', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Deletion failed' });
+  }
+});
+
+router.put('/:postId', async (req, res) => {
+  if (!req.session.userId)
+      return res.status(400).json({ message: 'User not login' });
+
+  const postId = req.params.postId;
+  const userId = req.session.userId;
+  let deletedMedia: string[] = [];
+
+  try {
+    // Verify ownership
+    const post = await postsModel.getPost(postId);
+    if (!post || post.user_id !== userId) 
+      return res.status(403).json({ message: 'Unauthorized or not found' });
+
+    // Save new uploaded media
+    req.postId = postId;
+    upload.array('files')(req, res, async function (err) {
+      if (err) {
+        const dir = path.join(appRoot.path, 'public', 'uploads', 'posts', postId);
+        fs.mkdirSync(dir);
+        return res.status(400).json({ message: err.message });
+      }
+
+      const { content } = req.body;
+
+      // Update post content
+      await postsModel.updatePost(postId, content);
+  
+      // Delete old media files (by URL or filename)
+      if (req.body.deletedMedia) {
+        deletedMedia = Array.isArray(req.body.deletedMedia)
+          ? req.body.deletedMedia
+          : [req.body.deletedMedia];
+      }
+
+      for (const url of deletedMedia) {
+        const filename = path.basename(url);
+        const filePath = path.join(appRoot.path, 'public', 'uploads', 'posts', postId, filename);
+        fs.unlink(filePath, err => {
+          if (err) console.warn('Failed to delete file:', filename, err.message);
+        });
+      }
+
+      res.json({ success: true });
+    });
+  } catch (err) {
+    console.error('Edit Post Error', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

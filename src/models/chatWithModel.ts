@@ -52,10 +52,10 @@ export const getUsedChatWith = (userId: string, limit: number, offset: number): 
     const sql = `
       SELECT *,
       CASE
-        WHEN TRUE THEN (SELECT username From users where id = chat_with.to_user_id)
+        WHEN TRUE THEN (SELECT username From users where id = chat_with.from_user_id)
       END as target_username
       FROM chat_with
-      WHERE from_user_id = ?
+      WHERE to_user_id = ?
       ORDER BY last_chat DESC
       LIMIT ? OFFSET ?
     `;
@@ -71,5 +71,13 @@ export const updateRead = (fromUserId: string, toUserId: string, is_read: boolea
     const sql = `UPDATE chat_with SET is_read = ${tmp} WHERE id = ?`;
     const [result] = await db.query<OkPacket>(sql, [chatWithId]);
     resolve(result.message);
+  });
+};
+
+export const anyUnread = (userId: string): Promise<boolean> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = `SELECT TRUE as any_unread FROM chat_with WHERE to_user_id = ? AND is_read = 0`;
+    const [rows] = await db.query<RowDataPacket[]>(sql, [userId]);
+    resolve(rows.length > 0 ? true : false);
   });
 };

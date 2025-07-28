@@ -118,3 +118,11 @@ export const getUserPosts = (userId: string, limit: number, offset:number): Prom
     resolve(rows as Post[] || null);
   });
 };
+
+export const updatePost = (postId: string, content: string): Promise<string> => {
+  return new Promise(async (resolve, reject) => {
+    const sql = 'UPDATE posts SET content = ? WHERE id = ?';
+    const [result] = await db.query<OkPacket>(sql, [content, postId]);
+    resolve(result.message);
+  });
+};

@@ -42,15 +42,24 @@ router.get('/history/:userId', async (req, res) => {
 router.put('/read', async (req, res) => {
   if (!req.session.userId) return res.status(400).json({ message: 'Login first' });
 
-  const fromUserId = req.session.userId;
+  const toUserId = req.session.userId;
   const { targetUserId } = req.body;
 
   try {
-    res.json(await chatWithModel.updateRead(fromUserId, targetUserId, true));
+    res.json(await chatWithModel.updateRead(targetUserId, toUserId, true));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to read' });
   }
+});
+
+// GET /api/chat/any-unread
+// return { anyUnread: boolean }
+router.get('/any-unread', async (req, res) => {
+  if (!req.session.userId) return res.status(400).json({ message: 'Login first' });
+
+  const anyUnread = await chatWithModel.anyUnread(req.session.userId);
+  res.json({ anyUnread: anyUnread });
 });
 
 export default router;
