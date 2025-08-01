@@ -5,6 +5,7 @@ import { randomBytes } from 'crypto';
 import { sendVerificationEmail, sendResetEmail } from '../utils/mail';
 import fs from 'fs/promises';
 import appRoot from 'app-root-path'
+import { Role } from '../routes/admin/auth';
 
 const router = Router();
 
@@ -14,10 +15,10 @@ router.post('/register', async (req: Request, res: Response) => {
 
   try {
     var existingUser = await userModel.getUserById(id);
-    if (existingUser) return res.status(400).json({ message: 'Id already in use' });
+    if (existingUser) return res.status(400).json({ error: 'Id already in use' });
 
     existingUser = await userModel.getUserByEmail(email);
-    if (existingUser) return res.status(400).json({ message: 'Email already in use' });
+    if (existingUser) return res.status(400).json({ error: 'Email already in use' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const token = randomBytes(64).toString('hex');
@@ -31,7 +32,7 @@ router.post('/register', async (req: Request, res: Response) => {
     res.status(201).json({ message: 'User registered. Please check your email to verify', id });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -62,6 +63,10 @@ router.post('/login', async (req: Request, res: Response) => {
     if (!isVerified) return res.status(401).json({ message: 'Email not verified yet' });
 
     req.session.userId = user.id;
+    req.session.role = Role.user;
+
+    if (user.is_suspended) return res.status(401).json({ message: `This user has been suspended, please contact us` });
+
     res.json({ message: 'Login successful', userId: user.id });
   } catch (err) {
     console.error(err);
@@ -82,6 +87,9 @@ router.post('/logout', (req: Request, res: Response) => {
 router.get('/me', async (req: Request, res: Response) => {
   if (req.session.userId) {
     const user = await userModel.getUserById(req.session.userId);
+
+    if (user?.is_suspended) return res.status(401).json({ isLoggedIn: false, message: `This user has been suspended, please contact us` });
+
     res.json({ 
       isLoggedIn: true,
       userId: user?.id,
@@ -100,7 +108,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
   const { email } = req.body;
 
   const user = await userModel.getUserByEmail(email);
-  if (!user) return res.status(200).json({ message: 'Email not regist' });
+  if (!user) return res.status(400).json({ error: 'Email not regist' });
 
   const token = randomBytes(64).toString('hex');
   const expires = new Date(Date.now() + 1000 * 60 * 5); // 5 minutes
@@ -117,7 +125,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
   const { token, password } = req.body;
 
   const user = await userModel.getUserByResetToken(token);
-  if (!user) return res.status(400).json({ message: 'Invalid or expired token.' });
+  if (!user) return res.status(400).json({ error: 'Invalid or expired token.' });
 
   userModel.resetPassword(user.id, password);
 

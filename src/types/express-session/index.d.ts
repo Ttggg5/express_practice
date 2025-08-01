@@ -1,8 +1,10 @@
 import 'express-session';
+import { Role } from '../../routes/admin/auth';
 
 declare module 'express-session' {
   interface SessionData {
     userId?: string;
+    role?: Role;
   }
 }
 

@@ -8,6 +8,8 @@ import postRoutes from './routes/posts';
 import userRoutes from './routes/user';
 import notificationsRoutes from './routes/notifications';
 import chatRoutes from './routes/chat';
+import adminUsersRoutes from './routes/admin/users';
+import adminAuthRoutes from './routes/admin/auth';
 import dotenv from 'dotenv';
 import path from 'path';
 import appRoot from 'app-root-path';
@@ -52,6 +54,9 @@ app.use('/api/posts', postRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/admin/users', adminUsersRoutes);
+app.use('/api/admin/auth', adminAuthRoutes);
+
 
 // Root test route
 app.get('/', (req: Request, res: Response) => {

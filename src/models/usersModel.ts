@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import db from '../db';
 import { RowDataPacket, OkPacket, FieldPacket, OkPacketParams } from 'mysql2';
+import { Role } from '../routes/admin/auth';
 
 export interface User {
   id: string;
@@ -15,6 +16,8 @@ export interface User {
   updated_at: Date;
   reset_token: string;
   reset_token_expires: Date;
+  role: Role;
+  is_suspended: boolean;
 }
 
 // Get user by email and return User
