@@ -1,7 +1,11 @@
 import bcrypt from 'bcryptjs';
 import db from '../db';
 import { RowDataPacket, OkPacket, FieldPacket, OkPacketParams } from 'mysql2';
-import { Role } from '../routes/admin/auth';
+
+export enum Role {
+  user = 'user',
+  supervisor = 'supervisor'
+}
 
 export interface User {
   id: string;

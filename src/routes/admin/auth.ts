@@ -2,15 +2,11 @@ import express from 'express';
 import db from '../../db';
 import bcrypt from 'bcryptjs';
 import { RowDataPacket } from 'mysql2';
-
-export enum Role {
-  user = 'user',
-  supervisor = 'supervisor'
-}
+import { Role } from '../../models/usersModel';
 
 const router = express.Router();
 
-router.post('/supervisor-login', async (req, res) => {
+router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   const [rows] = await db.query<RowDataPacket[]>('SELECT * FROM users WHERE email = ?', [email]);
@@ -19,7 +15,7 @@ router.post('/supervisor-login', async (req, res) => {
   if (!user || user.role !== Role.supervisor)
     return res.status(403).json({ message: 'Access denied' });
 
-  const isMatch = await bcrypt.compare(password, user.password_hash);
+  const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
   req.session.userId = user.id;

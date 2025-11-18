@@ -5,7 +5,7 @@ import { randomBytes } from 'crypto';
 import { sendVerificationEmail, sendResetEmail } from '../utils/mail';
 import fs from 'fs/promises';
 import appRoot from 'app-root-path'
-import { Role } from '../routes/admin/auth';
+import { Role } from '../models/usersModel';
 
 const router = Router();
 

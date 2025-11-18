@@ -128,20 +128,20 @@ router.delete('/:postId', async (req, res) => {
   const sessionUserId = req.session.userId;
 
   try {
-    // 1) Verify ownership
+    // Verify ownership
     const post: postsModel.Post = await postsModel.getPost(postId);
     if (!post) return res.status(404).json({ message: 'Post not found' });
     if (post.user_id !== sessionUserId)
       return res.status(403).json({ message: 'Not your post' });
 
-    // 2) Delete related tables (likes, comments, follows share etc.)
+    // Delete related tables (likes, comments, follows share etc.)
     await postLikesModel.deletePostAllLikes(postId);
     await commentsModel.deleteAllComments(postId);
 
-    // 3) Delete post row
+    // Delete post row
     await postsModel.deletePost(postId);
 
-    // 4) Delete media folder (if exists)
+    // Delete media folder (if exists)
     const dir = path.join(appRoot.path, 'public', 'uploads', 'posts', postId);
     if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
 
