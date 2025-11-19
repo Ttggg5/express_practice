@@ -13,6 +13,8 @@ const posts_1 = __importDefault(require("./routes/posts"));
 const user_1 = __importDefault(require("./routes/user"));
 const notifications_1 = __importDefault(require("./routes/notifications"));
 const chat_1 = __importDefault(require("./routes/chat"));
+const users_1 = __importDefault(require("./routes/admin/users"));
+const auth_2 = __importDefault(require("./routes/admin/auth"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 const app_root_path_1 = __importDefault(require("app-root-path"));
@@ -50,6 +52,8 @@ app.use('/api/posts', posts_1.default);
 app.use('/api/user', user_1.default);
 app.use('/api/notifications', notifications_1.default);
 app.use('/api/chat', chat_1.default);
+app.use('/api/admin/users', users_1.default);
+app.use('/api/admin/auth', auth_2.default);
 // Root test route
 app.get('/', (req, res) => {
     res.send('Backend running with TypeScript');

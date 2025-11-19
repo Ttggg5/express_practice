@@ -1,5 +1,5 @@
 import 'express-session';
-import { Role } from '../../routes/admin/auth';
+import { Role } from '../../models/usersModel';
 
 declare module 'express-session' {
   interface SessionData {

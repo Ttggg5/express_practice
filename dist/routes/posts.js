@@ -59,7 +59,7 @@ const storage = multer_1.default.diskStorage({
         cb(null, dir);
     },
     filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uniqueSuffix = Date.now();
         const ext = path_1.default.extname(file.originalname);
         cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
     }
@@ -68,7 +68,7 @@ const upload = (0, multer_1.default)({
     storage,
     limits: { fileSize: 300 * 1024 * 1024 }, // 300MB
     fileFilter: (req, file, cb) => {
-        const allowed = ['image/jpg', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4'];
+        const allowed = ['image/jpg', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
         if (allowed.includes(file.mimetype))
             cb(null, true);
         else
@@ -151,18 +151,18 @@ router.delete('/:postId', async (req, res) => {
     const postId = req.params.postId;
     const sessionUserId = req.session.userId;
     try {
-        // 1) Verify ownership
+        // Verify ownership
         const post = await postsModel.getPost(postId);
         if (!post)
             return res.status(404).json({ message: 'Post not found' });
         if (post.user_id !== sessionUserId)
             return res.status(403).json({ message: 'Not your post' });
-        // 2) Delete related tables (likes, comments, follows share etc.)
+        // Delete related tables (likes, comments, follows share etc.)
         await postLikesModel.deletePostAllLikes(postId);
         await commentsModel.deleteAllComments(postId);
-        // 3) Delete post row
+        // Delete post row
         await postsModel.deletePost(postId);
-        // 4) Delete media folder (if exists)
+        // Delete media folder (if exists)
         const dir = path_1.default.join(app_root_path_1.default.path, 'public', 'uploads', 'posts', postId);
         if (fs_1.default.existsSync(dir))
             fs_1.default.rmSync(dir, { recursive: true, force: true });
@@ -171,6 +171,50 @@ router.delete('/:postId', async (req, res) => {
     catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Deletion failed' });
+    }
+});
+router.put('/:postId', async (req, res) => {
+    if (!req.session.userId)
+        return res.status(400).json({ message: 'User not login' });
+    const postId = req.params.postId;
+    const userId = req.session.userId;
+    let deletedMedia = [];
+    try {
+        // Verify ownership
+        const post = await postsModel.getPost(postId);
+        if (!post || post.user_id !== userId)
+            return res.status(403).json({ message: 'Unauthorized or not found' });
+        // Save new uploaded media
+        req.postId = postId;
+        upload.array('files')(req, res, async function (err) {
+            if (err) {
+                const dir = path_1.default.join(app_root_path_1.default.path, 'public', 'uploads', 'posts', postId);
+                fs_1.default.mkdirSync(dir);
+                return res.status(400).json({ message: err.message });
+            }
+            const { content } = req.body;
+            // Update post content
+            await postsModel.updatePost(postId, content);
+            // Delete old media files (by URL or filename)
+            if (req.body.deletedMedia) {
+                deletedMedia = Array.isArray(req.body.deletedMedia)
+                    ? req.body.deletedMedia
+                    : [req.body.deletedMedia];
+            }
+            for (const url of deletedMedia) {
+                const filename = path_1.default.basename(url);
+                const filePath = path_1.default.join(app_root_path_1.default.path, 'public', 'uploads', 'posts', postId, filename);
+                fs_1.default.unlink(filePath, err => {
+                    if (err)
+                        console.warn('Failed to delete file:', filename, err.message);
+                });
+            }
+            res.json({ success: true });
+        });
+    }
+    catch (err) {
+        console.error('Edit Post Error', err);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 router.post('/:postId/like', async (req, res) => {

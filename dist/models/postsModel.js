@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserPosts = exports.searchPosts = exports.getPostsOrderByTime = exports.removePostcomment = exports.addPostcomment = exports.removePostLike = exports.addPostLike = exports.deletePost = exports.getPost = exports.createPost = void 0;
+exports.updatePost = exports.getUserPosts = exports.searchPosts = exports.getPostsOrderByTime = exports.removePostcomment = exports.addPostcomment = exports.removePostLike = exports.addPostLike = exports.deletePost = exports.getPost = exports.createPost = void 0;
 const db_1 = __importDefault(require("../db"));
 const createPost = (postId, userId, content) => {
     return new Promise(async (resolve, reject) => {
@@ -110,3 +110,11 @@ const getUserPosts = (userId, limit, offset) => {
     });
 };
 exports.getUserPosts = getUserPosts;
+const updatePost = (postId, content) => {
+    return new Promise(async (resolve, reject) => {
+        const sql = 'UPDATE posts SET content = ? WHERE id = ?';
+        const [result] = await db_1.default.query(sql, [content, postId]);
+        resolve(result.message);
+    });
+};
+exports.updatePost = updatePost;

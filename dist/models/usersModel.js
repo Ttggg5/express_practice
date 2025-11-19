@@ -3,9 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchUserFromIdName = exports.getAvatar = exports.updateAvatar = exports.updateUser = exports.resetPassword = exports.getUserByResetToken = exports.setResetToken = exports.isUserVerfied = exports.verifyUser = exports.createUser = exports.getUserById = exports.getUserByEmail = void 0;
+exports.searchUserFromIdName = exports.getAvatar = exports.updateAvatar = exports.updateUser = exports.resetPassword = exports.getUserByResetToken = exports.setResetToken = exports.isUserVerfied = exports.verifyUser = exports.createUser = exports.getUserById = exports.getUserByEmail = exports.Role = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const db_1 = __importDefault(require("../db"));
+var Role;
+(function (Role) {
+    Role["user"] = "user";
+    Role["supervisor"] = "supervisor";
+})(Role || (exports.Role = Role = {}));
 // Get user by email and return User
 const getUserByEmail = (email) => {
     return new Promise(async (resolve, reject) => {

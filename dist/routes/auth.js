@@ -43,6 +43,7 @@ const crypto_1 = require("crypto");
 const mail_1 = require("../utils/mail");
 const promises_1 = __importDefault(require("fs/promises"));
 const app_root_path_1 = __importDefault(require("app-root-path"));
+const usersModel_1 = require("../models/usersModel");
 const router = (0, express_1.Router)();
 // Register
 router.post('/register', async (req, res) => {
@@ -50,10 +51,10 @@ router.post('/register', async (req, res) => {
     try {
         var existingUser = await userModel.getUserById(id);
         if (existingUser)
-            return res.status(400).json({ message: 'Id already in use' });
+            return res.status(400).json({ error: 'Id already in use' });
         existingUser = await userModel.getUserByEmail(email);
         if (existingUser)
-            return res.status(400).json({ message: 'Email already in use' });
+            return res.status(400).json({ error: 'Email already in use' });
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         const token = (0, crypto_1.randomBytes)(64).toString('hex');
         const publicPath = app_root_path_1.default.path + '/public';
@@ -64,7 +65,7 @@ router.post('/register', async (req, res) => {
     }
     catch (err) {
         console.error(err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 });
 // Verify user
@@ -89,6 +90,9 @@ router.post('/login', async (req, res) => {
         if (!isVerified)
             return res.status(401).json({ message: 'Email not verified yet' });
         req.session.userId = user.id;
+        req.session.role = usersModel_1.Role.user;
+        if (user.is_suspended)
+            return res.status(401).json({ message: `This user has been suspended, please contact us` });
         res.json({ message: 'Login successful', userId: user.id });
     }
     catch (err) {
@@ -109,6 +113,8 @@ router.post('/logout', (req, res) => {
 router.get('/me', async (req, res) => {
     if (req.session.userId) {
         const user = await userModel.getUserById(req.session.userId);
+        if (user?.is_suspended)
+            return res.status(401).json({ isLoggedIn: false, message: `This user has been suspended, please contact us` });
         res.json({
             isLoggedIn: true,
             userId: user?.id,
@@ -126,7 +132,7 @@ router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
     const user = await userModel.getUserByEmail(email);
     if (!user)
-        return res.status(200).json({ message: 'Email not regist' });
+        return res.status(400).json({ error: 'Email not regist' });
     const token = (0, crypto_1.randomBytes)(64).toString('hex');
     const expires = new Date(Date.now() + 1000 * 60 * 5); // 5 minutes
     await userModel.setResetToken(user.id, token, expires);
@@ -138,7 +144,7 @@ router.post('/reset-password', async (req, res) => {
     const { token, password } = req.body;
     const user = await userModel.getUserByResetToken(token);
     if (!user)
-        return res.status(400).json({ message: 'Invalid or expired token.' });
+        return res.status(400).json({ error: 'Invalid or expired token.' });
     userModel.resetPassword(user.id, password);
     res.json({ message: 'Password updated.' });
 });

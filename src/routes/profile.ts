@@ -62,6 +62,16 @@ router.use((err: any, req: Request, res: Response, next: NextFunction) => {
   next(err);
 });
 
+router.get('/update-time/:id', async (req, res) => {
+  const userId = req.params.id;
+  if (!userId.startsWith('@')) return res.status(400).json({ message: 'Invalid ID' });
+
+  const user = await userModel.getUserById(userId);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  res.json({update_at: user.updated_at});
+});
+
 router.get('/:id', async (req, res) => {
   const userId = req.params.id;
   if (!userId.startsWith('@')) return res.status(400).json({ message: 'Invalid ID' });
@@ -74,6 +84,7 @@ router.get('/:id', async (req, res) => {
     username: user.username,
     email: user.email,
     create_time: user.create_time,
+    update_at: user.updated_at,
     bio: user.bio,
   }
   res.json(userSafe);
