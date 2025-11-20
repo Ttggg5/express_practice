@@ -29,7 +29,7 @@ const socketIoServer = new socketIoServer_1.SocketIoServer(httpServer);
 socketIoServer.startServer();
 // Middleware
 app.use((0, cors_1.default)({
-    origin: true, // frontend URL
+    origin: '*', // frontend URL
     credentials: true // allow cookies from frontend
 }));
 app.use(express_1.default.json());
