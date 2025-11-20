@@ -29,7 +29,7 @@ socketIoServer.startServer();
 
 // Middleware
 app.use(cors({
-  origin: true, // frontend URL
+  origin: '*', // frontend URL
   credentials: true // allow cookies from frontend
 }));
 app.use(express.json());
