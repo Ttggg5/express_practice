@@ -302,11 +302,11 @@ router.post('/:postId/create-comment', async (req, res) => {
     try {
         await commentsModel.createComment(commentId, postId, req.session.userId, content);
         await postsModel.addPostcomment(postId);
-        const notificationId = `noti-${(0, uuid_1.v4)()}`;
+        const notificationId = `${(0, uuid_1.v4)()}`;
         await notificationsModel.sendNotifications(notificationId, req.session.userId, postId, commentId, notificationsModel.UserAction.commented);
         (await followsModel.getFollowers(req.session.userId, 0, 0)).forEach((u) => {
             notificationQueue_1.NotificationQueue.enqueue({
-                id: notificationId,
+                id: `${notificationId}-${u.id}`,
                 user_id: u.id,
                 actor_id: req.session.userId || '',
                 verb: notificationsModel.UserAction.commented
