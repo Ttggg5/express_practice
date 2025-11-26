@@ -23,7 +23,7 @@ export const sendNotifications = (id: string, actorId: string, postId: string, c
   return new Promise(async (resolve, reject) => {
     const sql = `
       INSERT INTO notifications (id, user_id, actor_id, verb, post_id, comment_id)
-      SELECT ?, follower_id, ?, '${action}', ?, ?
+      SELECT concat(?, '-', follower_id) AS id, follower_id, ?, '${action}', ?, ?
       FROM follows
       WHERE following_id = ?;
     `;
